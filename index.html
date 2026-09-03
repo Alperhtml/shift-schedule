@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="description" content="Acil tıp intörn nöbet listesi planlayıcı" />
+
+    <!-- Bağlantı önizlemesi (WhatsApp, Slack, X). Görsel eklemek isterseniz
+         og:image mutlak adres ister, yani site yayına girip adresi belli olduktan
+         sonra: <meta property="og:image" content="https://ADRES/onizleme.png" /> -->
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="tr_TR" />
+    <meta property="og:title" content="EMED Nöbet Planlayıcı" />
+    <meta property="og:description" content="Acil tıp intörn stajı için 28 günlük nöbet listesi. Tarayıcıda çalışır, veri sunucuya gitmez." />
+    <meta name="twitter:card" content="summary" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#F5F5F7" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#151517" media="(prefers-color-scheme: dark)" />
+    <title>EMED Nöbet Planlayıcı</title>
+
+    <!-- The splash is plain HTML and CSS so it paints before any script runs. -->
+    <style>
+      @property --koc-sweep { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+
+      /* Only <html> carries a background here. Giving <body> one too would outlive
+         the stylesheet and paint the page in the OS theme even after the user has
+         chosen the other one. */
+      html { background: #F5F5F7; }
+      body { margin: 0; }
+      @media (prefers-color-scheme: dark) { html { background: #151517; } }
+
+      #splash {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 22px;
+        background: #F5F5F7;
+        font: 400 13px/1.45 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", system-ui, sans-serif;
+        color: #6E6E73;
+        transition: opacity 260ms cubic-bezier(.32, .72, 0, 1);
+      }
+      @media (prefers-color-scheme: dark) { #splash { background: #151517; color: #A1A1A6; } }
+      #splash.is-gone { opacity: 0; pointer-events: none; }
+
+      /* The mark is a spiral whose wedges grow clockwise from three o'clock, so a
+         conic wipe from that angle reveals it smallest piece first, exactly in the
+         order the logo is drawn. The soft trailing edge makes each wedge fade in. */
+      .splash-mark {
+        width: 96px;
+        height: 79px;
+        -webkit-mask-image: conic-gradient(from 90deg at 37.9% 60.4%, #000 0deg, #000 calc(var(--koc-sweep) - 24deg), transparent var(--koc-sweep));
+        mask-image: conic-gradient(from 90deg at 37.9% 60.4%, #000 0deg, #000 calc(var(--koc-sweep) - 24deg), transparent var(--koc-sweep));
+        animation: koc-spiral 2100ms cubic-bezier(.32, .72, 0, 1) infinite;
+      }
+      .splash-mark img { width: 100%; height: 100%; display: block; }
+
+      @keyframes koc-spiral {
+        0%   { --koc-sweep: 0deg;   opacity: 0; }
+        8%   { opacity: 1; }
+        62%  { --koc-sweep: 384deg; }
+        86%  { --koc-sweep: 384deg; opacity: 1; }
+        100% { --koc-sweep: 384deg; opacity: 0; }
+      }
+
+      #splash-error { display: none; max-width: 320px; text-align: center; }
+      #splash.has-error .splash-mark { animation: none; -webkit-mask-image: none; mask-image: none; opacity: .35; }
+      #splash.has-error #splash-note { display: none; }
+      #splash.has-error #splash-error { display: block; }
+      #splash-error button {
+        margin-top: 12px;
+        height: 40px;
+        padding: 0 18px;
+        border: 0;
+        border-radius: 6px;
+        background: #0A6BFF;
+        color: #fff;
+        font: 500 15px/1 inherit;
+        cursor: pointer;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .splash-mark { animation: none; -webkit-mask-image: none; mask-image: none; }
+      }
+
+      /* Without a registered custom property the angle cannot animate, and the mask
+         would simply hide the mark. Show it whole instead. */
+      @supports not (background: paint(x)) {
+        @supports not (color: rgb(from red r g b)) {
+          .splash-mark { -webkit-mask-image: none; mask-image: none; animation: splash-pulse 1600ms ease-in-out infinite; }
+          @keyframes splash-pulse { 0%, 100% { opacity: .45; } 50% { opacity: 1; } }
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="splash" role="status" aria-live="polite">
+      <div class="splash-mark"><img src="./koc-logo@2x.png" alt="" /></div>
+      <p id="splash-note">Yükleniyor…</p>
+      <div id="splash-error">
+        <p><strong>Uygulama yüklenemedi.</strong></p>
+        <p>Bağlantınızı kontrol edip sayfayı yenileyin.</p>
+        <button type="button" onclick="location.reload()">Yenile</button>
+      </div>
+    </div>
+
+    <div id="root"></div>
+
+    <script>
+      // Wired before the application script so a failed load still says something.
+      (function () {
+        var splash = document.getElementById('splash');
+        document.documentElement.dataset.splashAt = String(Date.now());
+        var failed = false;
+        function fail() {
+          if (failed || !splash || splash.classList.contains('is-gone')) return;
+          failed = true;
+          splash.classList.add('has-error');
+        }
+        window.addEventListener('error', function (e) {
+          if (e.target && e.target !== window && e.target.tagName === 'SCRIPT') fail();
+        }, true);
+        window.addEventListener('unhandledrejection', fail);
+        window.setTimeout(function () { if (!window.__emedReady) fail(); }, 15000);
+      })();
+    </script>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

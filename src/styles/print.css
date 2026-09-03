@@ -1,0 +1,26 @@
+/* Print: the export frame is printed, fitted to one A4 landscape page.
+   The app is hidden only while that frame is mounted, so a plain Cmd+P still
+   prints something readable instead of a blank sheet. */
+@media print {
+  @page { size: A4 landscape; margin: 10mm; }
+
+  html, body { background: #FFFFFF !important; }
+
+  body:has(#print-root > *) #app-root { display: none !important; }
+
+  /* Toasts, dialogs and tooltips portal into <body>; none of them belongs on paper. */
+  body > *:not(#root) { display: none !important; }
+
+  #print-root:not(:empty) {
+    display: block !important;
+    position: static !important;
+    left: auto !important;
+    top: auto !important;
+    width: 1600px;
+    /* printSchedule() measures the frame and sets --print-scale so the board fits
+       one A4 landscape page in both directions. `zoom`, not `transform`: a
+       transform leaves the layout box at full size, so the page still breaks at
+       the unscaled height and the board spills onto a second sheet. */
+    zoom: var(--print-scale, 0.654);
+  }
+}

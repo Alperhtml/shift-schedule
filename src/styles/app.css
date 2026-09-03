@@ -1,0 +1,133 @@
+@import "tailwindcss";
+@import "@fontsource-variable/inter";
+@import "react-day-picker/style.css";
+@import "./tokens.css";
+@import "./print.css";
+
+@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
+
+@theme inline {
+  --color-ground: var(--ground);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-glass: var(--surface-glass);
+  --color-hairline: var(--hairline);
+  --color-text: var(--text);
+  --color-text-2: var(--text-2);
+  --color-text-3: var(--text-3);
+  --color-accent: var(--accent);
+  --color-accent-text: var(--accent-text);
+  --color-accent-tint: var(--accent-tint);
+  --color-error: var(--error);
+  --color-warn: var(--warn);
+  --color-warn-stroke: var(--warn-stroke);
+  --color-ok: var(--ok);
+  --color-info: var(--info);
+  --color-scrim: var(--scrim);
+
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter Variable", "Helvetica Neue", system-ui, sans-serif;
+
+  --text-micro: 11px;
+  --text-body: 13px;
+  --text-control: 15px;
+  --text-title: 22px;
+
+  --radius-control: 6px;
+  --radius-card: 12px;
+  --radius-sheet: 20px;
+
+  --ease-apple: cubic-bezier(.32, .72, 0, 1);
+}
+
+html {
+  background: var(--ground);
+  color: var(--text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  overflow-x: hidden;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+/* An outline, not a box-shadow: a box-shadow ring replaces the element's own
+   shadow, and setting a radius here would flatten round controls. `outline`
+   follows the element's border-radius on its own. */
+:focus-visible {
+  outline: 3px solid var(--accent-ring);
+  outline-offset: 2px;
+}
+
+.tabular { font-variant-numeric: tabular-nums; }
+
+.glass {
+  background: var(--surface-glass);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass { background: var(--surface); }
+}
+
+/* Motion. Enter animations translate from the edge the element belongs to. */
+@keyframes enter-up { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes enter-down { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+@keyframes enter-scale { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: none; } }
+@keyframes enter-right { from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: none; } }
+@keyframes enter-bottom { from { transform: translateY(100%); } to { transform: none; } }
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes chip-in { from { opacity: 0; transform: scale(.9); } to { opacity: 1; transform: none; } }
+@keyframes shake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-3px); } 40% { transform: translateX(3px); } 60% { transform: translateX(-3px); } 80% { transform: translateX(3px); } }
+@keyframes cell-pulse { 0%, 100% { box-shadow: inset 0 0 0 0 transparent; } 25%, 75% { box-shadow: inset 0 0 0 2px var(--accent); } }
+
+.anim-enter-up { animation: enter-up var(--dur) var(--ease) both; }
+.anim-enter-down { animation: enter-down var(--dur) var(--ease) both; }
+.anim-enter-scale { animation: enter-scale var(--dur) var(--ease) both; }
+.anim-enter-right { animation: enter-right var(--dur) var(--ease) both; }
+.anim-enter-bottom { animation: enter-bottom var(--dur) var(--ease) both; }
+.anim-fade { animation: fade-in var(--dur-fast) var(--ease) both; }
+.anim-chip { animation: chip-in var(--dur-fast) var(--ease) both; }
+.anim-shake { animation: shake var(--dur-fast) var(--ease) both; }
+.anim-pulse { animation: cell-pulse 480ms var(--ease) both; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 120ms !important;
+    animation-delay: 0ms !important;
+    animation-name: fade-in !important;
+    transition-duration: 120ms !important;
+  }
+}
+
+/* react-day-picker, restyled onto the tokens. */
+.rdp-root {
+  --rdp-accent-color: var(--accent);
+  --rdp-accent-background-color: var(--accent-tint);
+  --rdp-day-height: 40px;
+  --rdp-day-width: 40px;
+  --rdp-day_button-height: 36px;
+  --rdp-day_button-width: 36px;
+  --rdp-day_button-border-radius: 999px;
+  --rdp-selected-border: none;
+  --rdp-outside-opacity: .35;
+  --rdp-disabled-opacity: .35;
+  --rdp-today-color: var(--accent-text);
+  --rdp-weekday-text-transform: none;
+  font-size: 13px;
+}
+.rdp-month_caption { font-size: 15px; font-weight: 600; }
+.rdp-weekday { color: var(--text-2); font-weight: 500; font-size: 11px; }
+.rdp-day_button { transition: background-color var(--dur-fast) var(--ease); }
+.rdp-day_button:hover:not([disabled]) { background: var(--accent-tint); }
+.rdp-range { background: var(--accent-tint); }
+.rdp-selected .rdp-day_button { background: var(--accent); color: #FFFFFF; font-weight: 600; }
+.rdp-today:not(.rdp-selected) .rdp-day_button { box-shadow: inset 0 0 0 1px var(--accent-text); }
+.rdp-chevron { fill: var(--text-2); }
+.rdp-button_next, .rdp-button_previous { border-radius: var(--radius-control); }
+.rdp-button_next:hover, .rdp-button_previous:hover { background: var(--accent-tint); }

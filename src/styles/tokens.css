@@ -1,0 +1,86 @@
+/* Design tokens. DESIGN.md §1.1, §1.2, §1.3, §1.5. The only colour and motion
+   values the application is allowed to use. */
+:root,
+[data-theme="light"] {
+  color-scheme: light;
+
+  --ground: #F5F5F7;
+  --surface: #FFFFFF;
+  --surface-2: #F2F2F4;
+  --surface-glass: rgba(250, 250, 250, .72);
+  --hairline: rgba(0, 0, 0, .08);
+
+  --text: #1D1D1F;
+  --text-2: #6E6E73;
+  --text-3: #AEAEB2;
+
+  --accent: #0A6BFF;
+  --accent-text: #0A5FE0;
+  --accent-tint: rgba(10, 107, 255, .10);
+  --accent-ring: rgba(10, 107, 255, .35);
+
+  --error: #C81E1E;
+  --warn: #9A5B00;
+  --warn-stroke: #F0A500;
+  --ok: #1B7F3B;
+  --info: #6E6E73;
+
+  --scrim: rgba(0, 0, 0, .45);
+  --shadow-float: 0 8px 30px rgba(0, 0, 0, .10);
+  --shadow-knob: 0 1px 3px rgba(0, 0, 0, .25);
+
+  --ease: cubic-bezier(.32, .72, 0, 1);
+  --dur-fast: 180ms;
+  --dur: 240ms;
+
+  --radius-control: 6px;
+  --radius-card: 12px;
+  --radius-sheet: 20px;
+
+--chip-pink-bg: #FFD9E2; --chip-pink-fg: #B12F62; --dot-pink: #DF407D;
+  --chip-orange-bg: #FFCAAB; --chip-orange-fg: #914500; --dot-orange: #CE6500;
+  --chip-yellow-bg: #FAE282; --chip-yellow-fg: #756200; --dot-yellow: #9D8500;
+  --chip-green-bg: #BBFAAD; --chip-green-fg: #217700; --dot-green: #30A100;
+  --chip-teal-bg: #73FBF1; --chip-teal-fg: #00706A; --dot-teal: #009A93;
+  --chip-blue-bg: #C5E8FF; --chip-blue-fg: #006A9C; --dot-blue: #0090D0;
+  --chip-indigo-bg: #CFD2FE; --chip-indigo-fg: #5349B9; --dot-indigo: #786EF9;
+  --chip-purple-bg: #F7BFFE; --chip-purple-fg: #883194; --dot-purple: #BC52CB;
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --ground: #151517;
+  --surface: #1C1C1E;
+  --surface-2: #26262A;
+  --surface-glass: rgba(28, 28, 30, .72);
+  --hairline: rgba(255, 255, 255, .10);
+
+  --text: #F5F5F7;
+  --text-2: #A1A1A6;
+  --text-3: #636366;
+
+  --accent: #0A6BFF;
+  --accent-text: #4D9BFF;
+  --accent-tint: rgba(77, 155, 255, .16);
+  --accent-ring: rgba(77, 155, 255, .45);
+
+  --error: #FF6B6B;
+  --warn: #FFB340;
+  --warn-stroke: #FFB340;
+  --ok: #4CD07A;
+  --info: #A1A1A6;
+
+  --scrim: rgba(0, 0, 0, .60);
+  --shadow-float: 0 8px 30px rgba(0, 0, 0, .35);
+  --shadow-knob: 0 1px 3px rgba(0, 0, 0, .45);
+
+--chip-pink-bg: #5A2536; --chip-pink-fg: #FFC0D0;
+  --chip-orange-bg: #552805; --chip-orange-fg: #FFC6A4;
+  --chip-yellow-bg: #443801; --chip-yellow-fg: #EFD45D;
+  --chip-green-bg: #214419; --chip-green-fg: #A2EB91;
+  --chip-teal-bg: #01423F; --chip-teal-fg: #3BF1E7;
+  --chip-blue-bg: #013D5C; --chip-blue-fg: #A8DCFF;
+  --chip-indigo-bg: #302F5E; --chip-indigo-fg: #CDD0FF;
+  --chip-purple-bg: #49264E; --chip-purple-fg: #F8BBFF;
+}
