@@ -66,14 +66,10 @@ body {
 
 .tabular { font-variant-numeric: tabular-nums; }
 
-.glass {
-  background: var(--surface-glass);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-}
-@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .glass { background: var(--surface); }
-}
+/* Panels above the page: opaque, separated by a hairline and a soft shadow
+   rather than by translucency. No backdrop-filter, so every machine and every
+   browser draws them the same way. */
+.glass { background: var(--surface-glass); }
 
 /* Motion. Enter animations translate from the edge the element belongs to. */
 @keyframes enter-up { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }

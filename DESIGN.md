@@ -13,7 +13,7 @@ All values below are the only ones components may use. Semantic colours are used
 | `--ground` | `#F5F5F7` | page background |
 | `--surface` | `#FFFFFF` | cards, board cells, popovers |
 | `--surface-2` | `#F2F2F4` | night zone fill, inset areas |
-| `--surface-glass` | `rgba(250,250,250,.72)` + `backdrop-filter: blur(24px) saturate(180%)` | top bar, bottom sheet, popovers; solid fallback `--surface` |
+| `--surface-glass` | `#FAFAFA`, opaque | top bar, bottom sheet, popovers, dialogs, tooltips, toasts |
 | `--hairline` | `rgba(0,0,0,.08)` | separators and cell edges, 1 device pixel |
 | `--text` | `#1D1D1F` | primary text (16.1:1 on ground) |
 | `--text-2` | `#6E6E73` | secondary text (4.9:1) |
@@ -34,7 +34,7 @@ All values below are the only ones components may use. Semantic colours are used
 | `--ground` | `#151517` |
 | `--surface` | `#1C1C1E` |
 | `--surface-2` | `#26262A` |
-| `--surface-glass` | `rgba(28,28,30,.72)` + same blur |
+| `--surface-glass` | `#1C1C1E`, opaque |
 | `--hairline` | `rgba(255,255,255,.10)` |
 | `--text` | `#F5F5F7` (15.6:1) |
 | `--text-2` | `#A1A1A6` (6.6:1) |
@@ -80,7 +80,8 @@ Four sizes, nothing else: 11 (micro labels, zone hours, chip counts), 13 (body, 
 
 - Spacing unit 4 px; scale 4, 8, 12, 16, 24, 32, 48. Outer padding generous (24 to 32), inner grouping tight (4 to 8).
 - Radius: 6 controls and chips, 12 cards and popovers, 20 sheets and dialogs. One card never mixes three radii.
-- Elevation: none on cards. Popovers and sheets float with `0 8px 30px rgba(0,0,0,.10)` (dark: `.35`) plus the glass material. Nothing else has a shadow.
+- Elevation: none on cards. Popovers and sheets float with `0 8px 30px rgba(0,0,0,.10)` (dark: `.35`) and a hairline border. Nothing else has a shadow.
+- No translucency. These panels were once 72 percent with a 24 px backdrop blur. The blur does not run everywhere, most visibly with macOS Reduce transparency, and without it the page showed through sharply. Depth now comes from the shadow and the hairline alone, which renders the same on every machine.
 - Motion: `--ease: cubic-bezier(.32,.72,0,1)`, `--dur-fast: 180ms`, `--dur: 240ms`. Enter: fade + 8 px translate from the edge the thing belongs to. Exit at 70 % of the enter duration. `prefers-reduced-motion: reduce` drops every transform and stagger and keeps a 120 ms opacity fade.
 - Focus ring: `0 0 0 3px rgba(10,107,255,.35)` with 2 px offset, on every interactive element, visible only for `:focus-visible`.
 - Hit targets: 44 × 44 px minimum on touch; on pointer devices chips may be 24 px tall but their hit area is padded to 32.
