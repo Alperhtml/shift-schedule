@@ -1,4 +1,5 @@
 import { useStore } from '../../state/store';
+import { modeOf } from '../../state/reducer';
 import { useLang, useT } from '../../i18n';
 import type { Lang } from '../../engine/types';
 import type { UiState } from '../../state/reducer';
@@ -12,6 +13,7 @@ import { NamePoolCard } from '../setup/NamePoolCard';
 
 export function SettingsSheet() {
   const { state, dispatch } = useStore();
+  const solo = modeOf(state.schedule) === 'solo';
   const { lang } = useLang();
   const t = useT();
   const mobile = useMediaQuery('(max-width: 767px)');
@@ -48,8 +50,8 @@ export function SettingsSheet() {
         </div>
         <PeriodCard />
         <InternsCard />
-        <StaffingCard />
-        <NamePoolCard />
+        {solo ? null : <StaffingCard />}
+        {solo ? null : <NamePoolCard />}
       </div>
     </Sheet>
   );

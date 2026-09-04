@@ -1,5 +1,5 @@
 import type { Assignment, InternId, Lang, Schedule, ShiftType } from '../engine/types';
-import { MIN_PER_SHIFT_MAX, MIN_PER_SHIFT_MIN, NAME_MAX, POOL_MAX } from '../engine/types';
+import { MAX_INTERNS, MIN_INTERNS, MIN_PER_SHIFT_MAX, MIN_PER_SHIFT_MIN, NAME_MAX, POOL_MAX } from '../engine/types';
 import { cleanPool, createSchedule, defaultMinPerShift, hasAssignment, makeInterns } from '../engine/schedule';
 import { distributePool } from '../engine/pool';
 import { isMonday, nextMonday } from '../engine/dates';
@@ -28,6 +28,7 @@ interface CellRef {
 export type Action =
   | { type: 'SET_START_DATE'; isoDate: string }
   | { type: 'SET_INTERN_COUNT'; n: number }
+  | { type: 'SET_MODE'; mode: ScheduleMode }
   | { type: 'SET_INTERN_NAME'; id: InternId; name: string }
   | { type: 'SET_MIN_PER_SHIFT'; n: number }
   | { type: 'ASSIGN'; internId: InternId; dayIndex: number; shift: ShiftType }
@@ -47,11 +48,20 @@ export type Action =
   | { type: 'SET_STEP'; step: UiState['step'] }
   | { type: 'SET_SETTINGS_OPEN'; open: boolean };
 
+export type ScheduleMode = 'team' | 'solo';
+
+/** A solo schedule is a roster of one, so the mode is read off the roster. */
+export function modeOf(schedule: Schedule): ScheduleMode {
+  return schedule.interns.length === 1 ? 'solo' : 'team';
+}
+
 export const HISTORY_CAP = 100;
+/** Where leaving solo lands, and what a fresh board starts with. */
+export const TEAM_DEFAULT = 6;
 
 export function initialState(now: Date = new Date()): AppState {
   return {
-    schedule: createSchedule(nextMonday(now), 6),
+    schedule: createSchedule(nextMonday(now), TEAM_DEFAULT),
     past: [],
     future: [],
     ui: { step: 'setup', view: 'calendar', lang: 'tr', theme: 'system', settingsOpen: false },
@@ -75,6 +85,22 @@ function outsideHistory(state: AppState, change: (s: Schedule) => Schedule): App
   };
 }
 
+function withInternCount(state: AppState, n: number): AppState {
+  const s = state.schedule;
+  const interns = makeInterns(n, s.interns);
+  if (interns.length === s.interns.length) return state;
+  const ids = new Set(interns.map(i => i.id));
+  // The default follows the count only while the user has not set a target of
+  // their own; a chosen target survives a change of intern count.
+  const untouched = s.minPerShift === defaultMinPerShift(s.interns.length);
+  return withHistory(state, {
+    ...s,
+    interns,
+    assignments: s.assignments.filter(a => ids.has(a.internId)),
+    minPerShift: untouched ? defaultMinPerShift(interns.length) : s.minPerShift,
+  });
+}
+
 const same = (a: Assignment, internId: InternId, dayIndex: number, type: ShiftType): boolean =>
   a.internId === internId && a.dayIndex === dayIndex && a.type === type;
 
@@ -86,20 +112,13 @@ export function reducer(state: AppState, action: Action): AppState {
       if (!isMonday(action.isoDate)) return state;
       return outsideHistory(state, x => ({ ...x, startDate: action.isoDate }));
 
-    case 'SET_INTERN_COUNT': {
-      const interns = makeInterns(action.n, s.interns);
-      if (interns.length === s.interns.length) return state;
-      const ids = new Set(interns.map(i => i.id));
-      // The default follows the count only while the user has not set a target of
-      // their own; a chosen target survives a change of intern count.
-      const untouched = s.minPerShift === defaultMinPerShift(s.interns.length);
-      return withHistory(state, {
-        ...s,
-        interns,
-        assignments: s.assignments.filter(a => ids.has(a.internId)),
-        minPerShift: untouched ? defaultMinPerShift(interns.length) : s.minPerShift,
-      });
-    }
+    case 'SET_INTERN_COUNT':
+      return withInternCount(state, Math.min(MAX_INTERNS, Math.max(MIN_INTERNS, action.n)));
+
+    // Solo is one person planning their own month, so it is simply a roster of one.
+    // Nothing stores which mode is on; the roster size is the mode.
+    case 'SET_MODE':
+      return withInternCount(state, action.mode === 'solo' ? 1 : TEAM_DEFAULT);
 
     case 'SET_INTERN_NAME': {
       // Only the length is capped here. Trimming on every keystroke of a controlled

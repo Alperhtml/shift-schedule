@@ -69,7 +69,9 @@ export function validate(schedule: Schedule): Violation[] {
   for (let d = 0; d < DAYS; d++) {
     for (const type of SHIFT_TYPES) {
       const c = slots.get(slotKey(d, type))?.length ?? 0;
-      if (c < schedule.minPerShift) {
+      // A solo schedule is one person planning their own month; every shift they
+      // did not take would otherwise be reported as understaffed.
+      if (schedule.interns.length > 1 && c < schedule.minPerShift) {
         out.push({ code: 'UNDER_STAFFED', severity: 'warning', dayIndex: d, type, related: [], params: { count: c, min: schedule.minPerShift } });
       }
       if (c >= HIGH_DENSITY_AT) {

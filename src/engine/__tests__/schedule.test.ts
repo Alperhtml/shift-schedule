@@ -14,11 +14,14 @@ describe('schedule helpers', () => {
     expect(defaultMinPerShift(7)).toBe(2);
     expect(defaultMinPerShift(8)).toBe(2);
   });
-  it('makeInterns keeps names on grow and shrink, clamps 4..8', () => {
+  it('makeInterns keeps names on grow and shrink, clamps 1..8', () => {
     const a = makeInterns(5).map((i, k) => ({ ...i, realName: `n${k}` }));
     expect(makeInterns(6, a).map(i => i.realName)).toEqual(['n0', 'n1', 'n2', 'n3', 'n4', '']);
     expect(makeInterns(4, a).map(i => i.realName)).toEqual(['n0', 'n1', 'n2', 'n3']);
-    expect(makeInterns(2)).toHaveLength(4);
+    // The floor is one, for a solo schedule. The team floor of 4 belongs to the
+    // setup stepper and to SET_INTERN_COUNT, which is where it is tested.
+    expect(makeInterns(1)).toHaveLength(1);
+    expect(makeInterns(0)).toHaveLength(1);
     expect(makeInterns(9)).toHaveLength(8);
     expect(makeInterns(8).map(i => i.colorKey)).toEqual(['orange', 'green', 'blue', 'purple', 'teal', 'yellow', 'pink', 'indigo']);
     expect(makeInterns(4).map(i => i.id)).toEqual(['intern-1', 'intern-2', 'intern-3', 'intern-4']);

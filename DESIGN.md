@@ -180,6 +180,8 @@ Same top bar. A table: first column intern (dot + name, sticky), 28 columns head
 - Settings sheet: slides in from the right on desktop (420 px), from the bottom on mobile, and reuses the three setup cards.
 - Export menu: quiet button opens a menu with six items and a hairline separating downloads from "Bağlantıyı kopyala".
 - Toasts: bottom centre, glass pill, 13 px, 3 s auto-dismiss, `aria-live="polite"`, never steal focus.
+- Mode switch: a segmented control at the top of the setup screen, `Takım programı` / `Kendi programım`, with one line of explanation under it. Solo hides the staffing and name-pool cards and the intern stepper; the interns card becomes a single field titled `Siz`.
+- Merge review: a 560 px dialog. One row per file with the person it contributes, their day and night counts, and a remove button; a rule; then the roster line, the period, and the problem list. Problem lines carry a small `--warn-stroke` dot so they scan as problems rather than prose. Empty shifts are listed as dates, at most eight then `ve n tane daha`. The primary action is disabled while a file needs a decision.
 
 ### 2.6 Identity, loading and failure
 

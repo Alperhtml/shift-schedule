@@ -3,6 +3,7 @@ import { useStore } from '../../state/store';
 import { useLang, useT, internLabel } from '../../i18n';
 import { MAX_INTERNS, MIN_INTERNS, NAME_MAX } from '../../engine/types';
 import { affectedByShrink } from '../../state/helpers';
+import { modeOf } from '../../state/reducer';
 import { Card } from '../ui/Card';
 import { Stepper } from '../ui/Stepper';
 import { Dialog } from '../ui/Dialog';
@@ -13,6 +14,7 @@ export function InternsCard({ onTouch }: { onTouch?: (() => void) | undefined })
   const { lang } = useLang();
   const t = useT();
   const [pending, setPending] = useState<number | null>(null);
+  const solo = modeOf(state.schedule) === 'solo';
 
   const request = (n: number): void => {
     onTouch?.();
@@ -23,15 +25,19 @@ export function InternsCard({ onTouch }: { onTouch?: (() => void) | undefined })
   const confirm = pending === null ? { interns: 0, assignments: 0 } : affectedByShrink(state.schedule, pending);
 
   return (
-    <Card title={t('setup.interns.title')}>
-      <Stepper
-        value={state.schedule.interns.length}
-        min={MIN_INTERNS}
-        max={MAX_INTERNS}
-        label={t('setup.interns.count')}
-        onChange={request}
-      />
-      <p className="mt-5 mb-1.5 text-[11px] font-medium uppercase tracking-[.04em] text-text-2">{t('setup.interns.name')}</p>
+    <Card title={solo ? t('setup.solo.title') : t('setup.interns.title')}>
+      {solo ? null : (
+        <Stepper
+          value={state.schedule.interns.length}
+          min={MIN_INTERNS}
+          max={MAX_INTERNS}
+          label={t('setup.interns.count')}
+          onChange={request}
+        />
+      )}
+      <p className={`${solo ? '' : 'mt-5 '}mb-1.5 text-[11px] font-medium uppercase tracking-[.04em] text-text-2`}>
+        {solo ? t('setup.solo.name') : t('setup.interns.name')}
+      </p>
       <ul className="flex flex-col gap-2">
         {state.schedule.interns.map(intern => (
           <li key={intern.id} className="flex items-center gap-3">
@@ -41,7 +47,7 @@ export function InternsCard({ onTouch }: { onTouch?: (() => void) | undefined })
               value={intern.realName}
               maxLength={NAME_MAX}
               aria-label={`${t('setup.interns.name')}, ${internLabel(intern, lang)}`}
-              placeholder={t('intern.placeholder', { n: intern.index })}
+              placeholder={solo ? t('setup.solo.name') : t('intern.placeholder', { n: intern.index })}
               onFocus={() => onTouch?.()}
               onChange={e => dispatch({ type: 'SET_INTERN_NAME', id: intern.id, name: e.target.value })}
               onBlur={e => {
@@ -54,6 +60,7 @@ export function InternsCard({ onTouch }: { onTouch?: (() => void) | undefined })
           </li>
         ))}
       </ul>
+      {solo ? <p className="mt-2 text-[13px] leading-[1.45] text-text-2">{t('setup.solo.hint')}</p> : null}
 
       <Dialog
         open={pending !== null}

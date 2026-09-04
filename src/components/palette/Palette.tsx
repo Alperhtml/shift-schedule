@@ -3,6 +3,7 @@ import { useDroppable } from '@dnd-kit/core';
 import { ListPlus } from 'lucide-react';
 import { useStore } from '../../state/store';
 import { useT } from '../../i18n';
+import { modeOf } from '../../state/reducer';
 import { PALETTE_ID, useDragState } from '../board/DndProvider';
 import { PaletteRow } from './PaletteRow';
 import { NamePoolSheet } from './NamePoolSheet';
@@ -14,6 +15,7 @@ export function Palette({ showTitle = true }: { showTitle?: boolean | undefined 
   const drag = useDragState();
   const [poolOpen, setPoolOpen] = useState(false);
   const armed = drag.over === PALETTE_ID && drag.activeInternId !== null;
+  const solo = modeOf(state.schedule) === 'solo';
 
   return (
     <section
@@ -26,6 +28,7 @@ export function Palette({ showTitle = true }: { showTitle?: boolean | undefined 
         {showTitle ? (
           <h2 className="text-[11px] font-medium uppercase tracking-[.04em] text-text-2">{t('setup.interns.title')}</h2>
         ) : <span />}
+        {solo ? null : (
         <button
           type="button"
           aria-label={t('pool.open')}
@@ -36,6 +39,7 @@ export function Palette({ showTitle = true }: { showTitle?: boolean | undefined 
           <ListPlus aria-hidden size={13} strokeWidth={1.75} />
           {t('pool.title')}
         </button>
+        )}
       </div>
       <div className="flex flex-col">
         {state.schedule.interns.map(i => <PaletteRow key={i.id} intern={i} />)}

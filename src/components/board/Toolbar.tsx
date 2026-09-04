@@ -3,6 +3,7 @@ import { useStore } from '../../state/store';
 import { useT } from '../../i18n';
 import { Button } from '../ui/Button';
 import { ExportMenu } from '../export/ExportMenu';
+import { ImportMenu } from '../import/ImportMenu';
 
 export interface ToolbarProps {
   onRandomize: () => void;
@@ -25,6 +26,7 @@ export function Toolbar({ onRandomize, onReset, busy, compact = false }: Toolbar
             <RotateCcw aria-hidden size={15} strokeWidth={1.75} />
             {t('toolbar.reset')}
           </Button>
+          <ImportMenu />
           <ExportMenu />
         </>
       )}

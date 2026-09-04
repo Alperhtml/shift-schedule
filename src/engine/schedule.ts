@@ -1,5 +1,5 @@
 import type { Assignment, ColorKey, Intern, InternId, Schedule, ShiftType, SlotKey } from './types';
-import { COLOR_KEYS, MAX_INTERNS, MIN_INTERNS, NAME_MAX, POOL_MAX } from './types';
+import { COLOR_KEYS, MAX_INTERNS, NAME_MAX, POOL_MAX } from './types';
 import { at } from './util';
 
 export function slotKey(dayIndex: number, type: ShiftType): SlotKey {
@@ -65,7 +65,9 @@ export function colorFor(index: number): ColorKey {
 }
 
 export function makeInterns(n: number, existing: readonly Intern[] = []): Intern[] {
-  const count = Math.min(MAX_INTERNS, Math.max(MIN_INTERNS, n));
+  // Floor of one, not MIN_INTERNS: a solo schedule holds a single person. The
+  // team floor is enforced where it belongs, on the setup stepper and its action.
+  const count = Math.min(MAX_INTERNS, Math.max(1, n));
   return Array.from({ length: count }, (_, k) => {
     const index = k + 1;
     const prev = existing.find(i => i.index === index);

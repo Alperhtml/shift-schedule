@@ -13,6 +13,25 @@ Acil tıp intörn stajı için 28 günlük nöbet listesi hazırlayan, tarayıc�
 - Takvim ve matris görünümü, koyu ve açık tema, Türkçe ve İngilizce arayüz.
 - Sekiz intörn rengi göz kararı değil, ölçüyle seçildi: en yakın iki renk arasındaki algısal fark en büyük olacak şekilde arandı.
 - Dışa aktarma: PNG (3x), Excel, yazdırma veya PDF, JSON dosyası ve bağlantı.
+- İçe aktarma ayrı bir düğmede: tek dosya, ya da herkesin dosyasını bir arada.
+
+## Herkes kendi programını yapsın, sonra birleştirsin
+
+İlk ekranda iki mod var. Takım programında bütün intörnlerin nöbetlerini tek
+panoda planlarsınız. Kendi programımda yalnızca kendi 8 gündüz ve 8 gece
+nöbetinizi seçersiniz; kadro uyarıları çıkmaz, çünkü tek kişi 56 nöbeti zaten
+dolduramaz.
+
+Akış şöyle: herkes kendi programını yapar, JSON olarak dışa aktarır ve gönderir.
+Toplantıda bir kişi İçe aktar altındaki Programları birleştir ile bütün dosyaları
+birlikte seçer. Açılan ekran hangi dosyanın kimi getirdiğini, kimsenin almadığı
+nöbetleri, hedeften fazla kişi olan nöbetleri ve 8 + 8'ini tamamlamamış olanları
+listeler. Pano ancak Panoya aktar'a basılınca değişir.
+
+Birleşen program büyük ihtimalle ilk seferde geçerli olmayacak: yedi kişi 28 gün
+içinden serbestçe seçtiğinde bazı nöbetler boş, bazıları kalabalık kalır. Zaten
+amaç da bu, neyin pazarlık edilmesi gerektiğini görmek. Düzeltmeyi elle panoda
+yaparsınız.
 
 ## Çalıştırma
 

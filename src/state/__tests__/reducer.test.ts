@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { initialState, reducer, type AppState } from '../reducer';
+import { TEAM_DEFAULT, initialState, modeOf, reducer, type AppState } from '../reducer';
 import { createSchedule } from '../../engine/schedule';
 
 const base = (): AppState => ({ ...initialState(), schedule: createSchedule('2026-09-07', 4) });
@@ -27,6 +27,26 @@ describe('reducer', () => {
     const before = s;
     s = reducer(s, { type: 'MOVE', internId: 'intern-1', from: { dayIndex: 5, shift: 'DAY' }, to: { dayIndex: 2, shift: 'NIGHT' } });
     expect(s).toBe(before);
+  });
+  it('SET_INTERN_COUNT still holds the team floor of 4 and ceiling of 8', () => {
+    expect(reducer(base(), { type: 'SET_INTERN_COUNT', n: 1 }).schedule.interns).toHaveLength(4);
+    expect(reducer(base(), { type: 'SET_INTERN_COUNT', n: 99 }).schedule.interns).toHaveLength(8);
+  });
+  it('SET_MODE goes down to one person and back to the team default', () => {
+    let s = reducer(base(), { type: 'SET_MODE', mode: 'solo' });
+    expect(s.schedule.interns).toHaveLength(1);
+    expect(modeOf(s.schedule)).toBe('solo');
+    s = reducer(s, { type: 'SET_MODE', mode: 'team' });
+    expect(s.schedule.interns).toHaveLength(TEAM_DEFAULT);
+    expect(modeOf(s.schedule)).toBe('team');
+  });
+  it('SET_MODE to solo keeps the first name and drops the others shifts', () => {
+    let s = reducer(base(), { type: 'SET_INTERN_NAME', id: 'intern-1', name: 'Ayşe Yılmaz' });
+    s = assign(s, 'intern-1', 0, 'DAY');
+    s = assign(s, 'intern-2', 1, 'NIGHT');
+    s = reducer(s, { type: 'SET_MODE', mode: 'solo' });
+    expect(s.schedule.interns[0]?.realName).toBe('Ayşe Yılmaz');
+    expect(s.schedule.assignments).toEqual([{ internId: 'intern-1', dayIndex: 0, type: 'DAY', locked: false }]);
   });
   it('SET_INTERN_COUNT shrink drops assignments of removed interns, grow keeps names', () => {
     let s = reducer(base(), { type: 'SET_INTERN_COUNT', n: 6 });

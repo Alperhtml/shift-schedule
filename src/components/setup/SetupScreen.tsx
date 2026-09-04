@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useStore } from '../../state/store';
 import { useLang, useT } from '../../i18n';
 import type { Lang } from '../../engine/types';
-import type { UiState } from '../../state/reducer';
+import { modeOf, type ScheduleMode, type UiState } from '../../state/reducer';
 import { Button } from '../ui/Button';
 import { Segmented } from '../ui/Segmented';
 import { AppMark } from '../ui/AppMark';
@@ -17,6 +17,7 @@ export function SetupScreen() {
   const t = useT();
   const { lang } = useLang();
   const [showStaffing, setShowStaffing] = useState(false);
+  const mode = modeOf(state.schedule);
 
   return (
     <main className="mx-auto flex w-full max-w-[560px] flex-col gap-4 px-4 py-8 md:px-6 md:py-12">
@@ -47,10 +48,25 @@ export function SetupScreen() {
         </div>
       </header>
 
+      <div className="mb-1 flex flex-col gap-2">
+        <Segmented<ScheduleMode>
+          value={mode}
+          options={[
+            { value: 'team', label: t('setup.mode.team') },
+            { value: 'solo', label: t('setup.mode.solo') },
+          ]}
+          onChange={m => dispatch({ type: 'SET_MODE', mode: m })}
+          ariaLabel={t('setup.mode.aria')}
+        />
+        <p className="text-[13px] leading-[1.45] text-text-2">
+          {t(mode === 'solo' ? 'setup.mode.hint.solo' : 'setup.mode.hint.team')}
+        </p>
+      </div>
+
       <PeriodCard />
       <InternsCard onTouch={() => setShowStaffing(true)} />
-      {showStaffing ? <StaffingCard /> : null}
-      {showStaffing ? <NamePoolCard /> : null}
+      {mode === 'team' && showStaffing ? <StaffingCard /> : null}
+      {mode === 'team' && showStaffing ? <NamePoolCard /> : null}
 
       <div className="mt-2 flex justify-end">
         <Button variant="primary" onClick={() => dispatch({ type: 'SET_STEP', step: 'board' })}>

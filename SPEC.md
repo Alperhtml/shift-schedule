@@ -15,7 +15,7 @@ Out of scope (decided 2026-09-03, do not add): per-intern unavailable dates, wee
 | `DAYS` | 28 | rotation length, `dayIndex` 0..27 |
 | `startDate` | ISO `YYYY-MM-DD`, always a Monday | rotation starts Monday 08:00, ends 28 days later Monday 08:00 |
 | `ShiftType` | `'DAY'` 08:00-20:00, `'NIGHT'` 20:00-08:00 next day | two slots per calendar day, 56 slots |
-| `N` | integer in [4, 8] | intern count |
+| `N` | integer in [4, 8] for a team schedule, exactly 1 for a solo one (§14) | intern count |
 | `QUOTA` | 8 DAY and 8 NIGHT per intern | fixed, independent of N |
 | `NIGHT_GAP_MIN` | 3 | two nights of the same intern need `dayIndex` difference ≥ 3 (two full calendar days off between them) |
 | `minPerShift` | integer in [1, 4], default `max(1, floor(16·N / 56))` | user-set staffing target per slot |
@@ -126,7 +126,7 @@ Let `A` be the assignment set, `N(i)` the sorted night day-indices of intern `i`
 | `DOUBLE_SHIFT` | error | `d ∈ N(i)` and `d ∈ D(i)` | `(i, d, NIGHT)` | `[(d, DAY)]` | `{}` |
 | `QUOTA_OVER` | error | `|D(i)| > 8` or `|N(i)| > 8`, one per (i, type) | `(i, last dayIndex of that type, type)` | all cells of that type | `{ count }` |
 | `QUOTA_INCOMPLETE` | info | `|D(i)| < 8` or `|N(i)| < 8`, one per (i, type) | `dayIndex = -1`, `type` set | `[]` | `{ count, missing: 8−count }` |
-| `UNDER_STAFFED` | warning | `c(s) < minPerShift`, one per slot | `(dayIndex, type)`, no intern | `[]` | `{ count, min }` |
+| `UNDER_STAFFED` | warning | `c(s) < minPerShift`, one per slot, and only when `N > 1` (§14.1) | `(dayIndex, type)`, no intern | `[]` | `{ count, min }` |
 | `HIGH_DENSITY` | info | `c(s) ≥ 4`, one per slot | `(dayIndex, type)`, no intern | `[]` | `{ count }` |
 
 Explicitly legal, never flagged: DAY on `d` followed by NIGHT on `d+1` (24 h rest); any number of consecutive DAY shifts; NIGHT on `d` followed by DAY on `d+2`; a NIGHT on day 27 (there is no day 28 to check, the next rotation is not modelled); locked or unlocked makes no difference to any rule.
@@ -230,7 +230,7 @@ There is no name shuffle. A draw is undone by drawing again.
 
 ### 7.1 JSON file
 
-The `Schedule` object, `JSON.stringify(schedule, null, 2)`, file name `nobet-<startDate>.json`. Import: `JSON.parse`, then `isSchedule(x)` which checks §2 invariants and rejects anything else. Unknown extra keys are dropped. No migration logic beyond `version === 1`.
+The `Schedule` object, `JSON.stringify(schedule, null, 2)`, file name `nobet-<startDate>.json`. Import: `JSON.parse`, then `isSchedule(x)` which checks §2 invariants and rejects anything else. The roster may hold 1 to 8 interns here, not 4 to 8: a solo file (§14) carries one person, and the same widening applies to `<N>` in the share link. Unknown extra keys are dropped. No migration logic beyond `version === 1`.
 
 ### 7.2 Share link
 
@@ -451,3 +451,62 @@ Unit tests live in `src/**/__tests__/` or beside the module as `*.test.ts`.
 - `dates.test.ts`: `weekdayOf`, `dateOf` across a DST change (a rotation containing the last Sunday of October), `isMonday`.
 - `export.test.ts` (node, no DOM): the Excel workbook builder produces three sheets with the expected headers and 28 / N rows.
 - Component smoke tests with Testing Library: setup renders and gates cards; board renders 56 zones; assign popover dispatches `ASSIGN`.
+
+## 14. Solo schedules and merging
+
+Everyone plans their own month alone and exports it; one person then loads every
+file at once and the combined board shows where the choices collide. The merge is
+a negotiation report, not a finished plan: the union of freely chosen shifts is
+almost never a legal schedule, and saying so is the point of the feature.
+
+### 14.1 Modes
+
+The first screen offers two modes. The mode is not stored anywhere. A schedule
+with a single intern is solo, anything else is a team schedule; `modeOf()` in
+`state/reducer.ts` is the only definition.
+
+| | Team | Solo |
+|---|---|---|
+| Roster | 4 to 8 interns | exactly 1 |
+| Setup cards | period, interns, staffing, name pool | period, your name |
+| `UNDER_STAFFED` | reported | not reported: one person cannot staff 56 slots, so every slot they skipped would be a warning |
+| Name pool | available | hidden, there is nobody to hand a name to |
+| Everything else | identical | identical |
+
+`SET_INTERN_COUNT` clamps to [4, 8]; only `SET_MODE` produces a roster of one.
+`makeInterns` has a floor of 1 so a solo roster can be built, and `isSchedule`
+and `decodeHash` accept 1 to 8 so a solo file and a solo link both round-trip.
+
+### 14.2 The merge (`engine/merge.ts`)
+
+`mergeSchedules(inputs)` is pure and takes `{ file, schedule }[]`. It is the only
+code that combines schedules. Per file, in the order given:
+
+1. Interns with no assignment contribute nothing. A file where nobody has a shift
+   is excluded as `noPeople`.
+2. A contributing intern with an empty name excludes the file as `unnamed`. Files
+   are combined by name, so an anonymous one cannot be placed.
+3. The first usable file fixes the period. A file with a different `startDate` is
+   excluded as `dateMismatch`.
+4. A name an earlier file already holds excludes the file as `duplicate`, and the
+   report names the file it collides with.
+5. A file that would push the roster past `MAX_INTERNS` is excluded as `tooMany`.
+
+`duplicate` and `tooMany` set `blocked`, because they need a decision from the
+user rather than a silent drop; the other three are reported and skipped. The
+board is built from the accepted people sorted by `localeCompare(_, 'tr')`, so
+the same files always give the same board and the same colours whatever order
+they were picked in. Ids and colours are reassigned by that order, locked shifts
+survive, and `minPerShift` is `defaultMinPerShift(people.length)`.
+
+The report carries slots with nobody (`empty`), slots above the target (`over`),
+people not on exactly 8 and 8 (`incomplete`), and the number of severity `error`
+violations from `validate()` on the combined board (`ruleErrors`).
+
+### 14.3 The import menu
+
+Import is its own control beside export, holding `JSON dosyası` and
+`Programları birleştir`. Loading one file over a board that has content asks
+first, exactly as a share link does. The merge writes nothing until the user
+presses `Panoya aktar`, and applying dispatches `LOAD_SCHEDULE`, which clears the
+history.

@@ -1,5 +1,5 @@
 import type { Assignment, Intern, Schedule, ShiftType } from './types';
-import { DAYS, MAX_INTERNS, MIN_INTERNS, MIN_PER_SHIFT_MAX, MIN_PER_SHIFT_MIN, NAME_MAX } from './types';
+import { DAYS, MAX_INTERNS, MIN_PER_SHIFT_MAX, MIN_PER_SHIFT_MIN, NAME_MAX } from './types';
 import { isMonday } from './dates';
 import { cleanPool, makeInterns, withTrimmedNames } from './schedule';
 
@@ -51,7 +51,7 @@ export function decodeHash(raw: string): Schedule | null {
   if (!isMonday(iso)) return null;
   const n = Number(nStr);
   const min = Number(minStr);
-  if (!/^\d+$/.test(nStr) || !Number.isInteger(n) || n < MIN_INTERNS || n > MAX_INTERNS) return null;
+  if (!/^\d+$/.test(nStr) || !Number.isInteger(n) || n < 1 || n > MAX_INTERNS) return null;
   if (!/^\d+$/.test(minStr) || !Number.isInteger(min) || min < MIN_PER_SHIFT_MIN || min > MIN_PER_SHIFT_MAX) return null;
 
   let names: string[] = [];
@@ -107,7 +107,8 @@ export function isSchedule(x: unknown): Schedule | null {
   if (!isRecord(x) || x['version'] !== 1) return null;
   const { startDate, interns, minPerShift, assignments, namePool } = x;
   if (typeof startDate !== 'string' || !isMonday(startDate)) return null;
-  if (!Array.isArray(interns) || interns.length < MIN_INTERNS || interns.length > MAX_INTERNS) return null;
+  // One is allowed: a solo file holds the single person who filled it.
+  if (!Array.isArray(interns) || interns.length < 1 || interns.length > MAX_INTERNS) return null;
 
   const cleanInterns = makeInterns(interns.length);
   for (let k = 0; k < interns.length; k++) {

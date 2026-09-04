@@ -9,6 +9,7 @@ import { Segmented } from '../ui/Segmented';
 import { IconButton } from '../ui/IconButton';
 import { Menu, type MenuItem } from '../ui/Menu';
 import { ExportMenu } from '../export/ExportMenu';
+import { ImportMenu } from '../import/ImportMenu';
 import { AppMark } from '../ui/AppMark';
 import { Credit } from '../ui/Credit';
 import { Toolbar } from './Toolbar';
@@ -43,7 +44,10 @@ export function TopBar({ actions }: { actions: BoardActions }) {
       <div className="mx-auto flex max-w-[1600px] flex-wrap items-center gap-x-3 gap-y-2 px-3 py-2 md:px-5 md:py-3">
         {/* On a phone the title takes its own row so nothing is abbreviated; from
             the tablet breakpoint up everything sits on one line. */}
-        <div className="w-full min-w-0 md:w-auto md:flex-1">
+        {/* No min-w-0 from the tablet breakpoint up: the title must not shrink, so a
+            crowded row pushes the toolbar onto its own line instead of abbreviating
+            the application name. */}
+        <div className="w-full min-w-0 md:w-auto md:min-w-fit md:flex-1">
           <h1 className="flex min-w-0 items-center">
             <AppMark size="sm" />
           </h1>
@@ -57,6 +61,7 @@ export function TopBar({ actions }: { actions: BoardActions }) {
 
         {mobile ? (
           <>
+            <ImportMenu iconOnly />
             <ExportMenu iconOnly />
             <Menu label={t('toolbar.more')} items={overflow} icon={MoreHorizontal} iconOnly />
           </>
