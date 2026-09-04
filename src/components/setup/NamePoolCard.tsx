@@ -3,7 +3,7 @@ import { Plus, Shuffle, X } from 'lucide-react';
 import { useStore } from '../../state/store';
 import { useT } from '../../i18n';
 import { NAME_MAX, POOL_MAX } from '../../engine/types';
-import { cleanPool } from '../../engine/schedule';
+import { cleanPool, tidyName } from '../../engine/schedule';
 import { poolFit } from '../../engine/pool';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
@@ -22,11 +22,14 @@ export function NamePoolCard({ showTitle = true }: { showTitle?: boolean | undef
 
   const names = cleanPool(state.schedule.namePool);
   const fit = poolFit(state.schedule.interns, state.schedule.namePool);
-  const key = (n: string): string => n.trim().toLocaleLowerCase('tr-TR');
+  const key = (n: string): string => tidyName(n).toLocaleLowerCase('tr-TR');
 
-  const commit = (): void => {
-    // A paste of several lines is added as several names; anything else is one name.
-    const parts = draft.split(/[\n\r]+/).map(p => p.trim().slice(0, NAME_MAX)).filter(p => p !== '');
+  /** Lines, commas and semicolons all separate names. No Turkish name contains
+      one, and a pasted list uses whichever the person happened to have. */
+  const split = (text: string): string[] =>
+    text.split(/[\n\r,;]+/).map(p => tidyName(p)).filter(p => p !== '');
+
+  const commit = (parts: string[] = split(draft)): void => {
     if (parts.length === 0) {
       field.current?.focus();
       return;
@@ -79,10 +82,18 @@ export function NamePoolCard({ showTitle = true }: { showTitle?: boolean | undef
             e.preventDefault();
             commit();
           }}
+          onPaste={e => {
+            // A single-line input drops the newlines and maxLength cuts the rest,
+            // so a pasted list used to arrive as one 40 character name.
+            const text = e.clipboardData.getData('text');
+            if (!/[\n\r,;]/.test(text)) return;
+            e.preventDefault();
+            commit(split(text));
+          }}
           className="h-11 min-w-0 flex-1 rounded-[var(--radius-control)] border border-hairline bg-surface px-3
             text-[16px] text-text md:text-[15px] placeholder:text-text-3"
         />
-        <Button variant="primary" onClick={commit} disabled={draft.trim() === ''}>
+        <Button variant="primary" onClick={() => commit()} disabled={draft.trim() === ''}>
           <Plus aria-hidden size={15} strokeWidth={2} />
           {t('pool.add')}
         </Button>

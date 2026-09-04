@@ -15,7 +15,7 @@ describe('import menu and solo mode', () => {
     toBoard();
     fireEvent.click(screen.getByRole('button', { name: /İçe aktar/ }));
     expect(screen.getByRole('menuitem', { name: 'JSON dosyası' })).toBeInTheDocument();
-    expect(screen.getByRole('menuitem', { name: 'Programları birleştir' })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: /Programları birleştir/ })).toBeInTheDocument();
 
     fireEvent.keyDown(document, { key: 'Escape' });
     fireEvent.click(screen.getByRole('button', { name: /Dışa aktar/ }));
@@ -27,7 +27,7 @@ describe('import menu and solo mode', () => {
     render(<App />);
     toBoard();
     fireEvent.click(screen.getByRole('button', { name: /İçe aktar/ }));
-    fireEvent.click(screen.getByRole('menuitem', { name: 'Programları birleştir' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: /Programları birleştir/ }));
     expect(screen.getByRole('dialog', { name: 'Programları birleştir' })).toBeInTheDocument();
     expect(screen.getByText('Henüz dosya seçilmedi.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Panoya aktar' })).toBeDisabled();
@@ -46,10 +46,11 @@ describe('import menu and solo mode', () => {
     expect(screen.getAllByPlaceholderText(/İntörn \d/)).toHaveLength(6);
   });
 
-  it('an empty team board reports understaffing on all 56 slots, an empty solo board on none', () => {
+  it('neither an untouched team board nor a solo board reports understaffing', () => {
     const { unmount } = render(<App />);
     toBoard();
-    expect(screen.getByText('Kadro (56)')).toBeInTheDocument();
+    // Nothing has been placed yet, so there is nothing to be short of.
+    expect(screen.queryByText(/^Kadro \(/)).not.toBeInTheDocument();
     unmount();
 
     localStorage.clear();

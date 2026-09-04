@@ -60,11 +60,17 @@ describe('quota and staffing', () => {
     expect(v).toHaveLength(8);
     expect(v[0]).toMatchObject({ severity: 'info', dayIndex: -1, params: { count: 0, missing: 8 } });
   });
-  it('empty slot with min 2 -> UNDER_STAFFED count 0 min 2, on all 56 slots', () => {
-    const v = validate(sched([], 4, 2)).filter(x => x.code === 'UNDER_STAFFED');
+  it('empty slot with min 2 -> UNDER_STAFFED count 0 min 2, on the 55 slots left', () => {
+    // One shift placed, so the board has been started. Its own slot holds 1 of 2
+    // and is short as well, which is why all 56 are still reported.
+    const v = validate(sched([['intern-1', 0, 'DAY']], 4, 2)).filter(x => x.code === 'UNDER_STAFFED');
     expect(v).toHaveLength(56);
-    expect(v[0]).toMatchObject({ severity: 'warning', params: { count: 0, min: 2 } });
+    expect(v.filter(x => x.params['count'] === 0)).toHaveLength(55);
     expect(v[0]?.internId).toBeUndefined();
+  });
+  it('a board nobody has started reports no staffing at all', () => {
+    // 56 warnings before any work is done read as 56 mistakes.
+    expect(validate(sched([], 4, 2)).filter(x => x.code === 'UNDER_STAFFED')).toHaveLength(0);
   });
   it('4 interns in a slot -> HIGH_DENSITY', () => {
     const v = validate(sched([['intern-1', 0, 'DAY'], ['intern-2', 0, 'DAY'], ['intern-3', 0, 'DAY'], ['intern-4', 0, 'DAY']])).filter(x => x.code === 'HIGH_DENSITY');

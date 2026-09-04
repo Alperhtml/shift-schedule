@@ -10,6 +10,7 @@ describe('palette and diagnostics', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Panoya geç' }));
     expect(screen.getAllByText('G 0/8 · N 0/8')).toHaveLength(6);
     expect(screen.getByText(/Eksik kotalar/)).toHaveTextContent('12');
-    expect(screen.getByText(/^Kadro/)).toHaveTextContent('56');
+    // Staffing is not reported until the board has been started.
+    expect(screen.queryByText(/^Kadro/)).not.toBeInTheDocument();
   });
 });

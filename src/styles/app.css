@@ -18,6 +18,7 @@
   --color-accent: var(--accent);
   --color-accent-text: var(--accent-text);
   --color-accent-tint: var(--accent-tint);
+  --color-accent-tint-strong: var(--accent-tint-strong);
   --color-error: var(--error);
   --color-warn: var(--warn);
   --color-warn-stroke: var(--warn-stroke);

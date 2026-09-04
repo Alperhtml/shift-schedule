@@ -21,6 +21,7 @@
   --accent: #0A6BFF;
   --accent-text: #0A5FE0;
   --accent-tint: rgba(10, 107, 255, .10);
+  --accent-tint-strong: rgba(10, 107, 255, .22);
   --accent-ring: rgba(10, 107, 255, .35);
 
   --error: #C81E1E;
@@ -67,6 +68,7 @@
   --accent: #0A6BFF;
   --accent-text: #4D9BFF;
   --accent-tint: rgba(77, 155, 255, .16);
+  --accent-tint-strong: rgba(77, 155, 255, .30);
   --accent-ring: rgba(77, 155, 255, .45);
 
   --error: #FF6B6B;

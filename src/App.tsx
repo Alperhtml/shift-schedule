@@ -11,19 +11,31 @@ import { Button } from './components/ui/Button';
 import { SetupScreen } from './components/setup/SetupScreen';
 import { BoardScreen } from './components/board/BoardScreen';
 import { PRINT_ROOT_ID } from './components/export/printSchedule';
+import { download } from './components/export/download';
 
 function Screens({ boot }: { boot: ReturnType<typeof readBoot> }) {
   const { state, dispatch } = useStore();
   const t = useT();
   const toast = useToast();
   const [pendingLink, setPendingLink] = useState<Schedule | null>(boot.pending);
+  const [corrupt, setCorrupt] = useState<string | null>(boot.corrupt);
   const announced = useRef(false);
+
+  /** A link that has been dealt with, kept or refused, must not stay in the address
+      bar: the next person handed that URL would open somebody else's schedule. */
+  const clearHash = (): void => {
+    try {
+      history.replaceState(null, '', `${location.pathname}${location.search}`);
+    } catch {
+      /* null origin or a sandboxed frame: the decision still stands */
+    }
+  };
 
   useEffect(() => {
     if (announced.current) return;
     announced.current = true;
-    if (boot.event === 'loaded') toast(t('toast.loadedFromLink'));
-    if (boot.event === 'bad') toast(t('toast.badLink'));
+    if (boot.event === 'loaded') { toast(t('toast.loadedFromLink')); clearHash(); }
+    if (boot.event === 'bad') { toast(t('toast.badLink')); clearHash(); }
   }, [boot.event, toast, t]);
 
   return (
@@ -33,10 +45,20 @@ function Screens({ boot }: { boot: ReturnType<typeof readBoot> }) {
       <Dialog
         open={pendingLink !== null}
         title={t('dialog.link.title')}
-        onClose={() => setPendingLink(null)}
+        onClose={() => {
+          setPendingLink(null);
+          clearHash();
+        }}
         actions={
           <>
-            <Button onClick={() => setPendingLink(null)}>{t('dialog.cancel')}</Button>
+            <Button
+              onClick={() => {
+                setPendingLink(null);
+                clearHash();
+              }}
+            >
+              {t('dialog.cancel')}
+            </Button>
             <Button
               variant="primary"
               onClick={() => {
@@ -46,6 +68,7 @@ function Screens({ boot }: { boot: ReturnType<typeof readBoot> }) {
                   toast(t('toast.loadedFromLink'));
                 }
                 setPendingLink(null);
+                clearHash();
               }}
             >
               {t('dialog.link.confirm')}
@@ -54,6 +77,29 @@ function Screens({ boot }: { boot: ReturnType<typeof readBoot> }) {
         }
       >
         {t('dialog.link.body')}
+      </Dialog>
+
+      <Dialog
+        open={corrupt !== null}
+        title={t('dialog.corrupt.title')}
+        onClose={() => setCorrupt(null)}
+        actions={
+          <>
+            <Button
+              onClick={() => {
+                if (corrupt !== null) {
+                  download(new Blob([corrupt], { type: 'application/json' }), 'emed-nobet-yedek.json');
+                  toast(t('toast.backupSaved'));
+                }
+              }}
+            >
+              {t('dialog.corrupt.download')}
+            </Button>
+            <Button variant="primary" onClick={() => setCorrupt(null)}>{t('dialog.corrupt.continue')}</Button>
+          </>
+        }
+      >
+        {t('dialog.corrupt.body')}
       </Dialog>
     </>
   );

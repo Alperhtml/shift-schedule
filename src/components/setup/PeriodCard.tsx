@@ -35,6 +35,9 @@ export function PeriodCard() {
         />
       </div>
       <p className="mt-3 text-[13px] text-text-2">{t('setup.period.range', range)}</p>
+      {state.schedule.assignments.length > 0 ? (
+        <p className="mt-2 text-[12px] leading-[1.45] text-text-2">{t('setup.period.shift')}</p>
+      ) : null}
     </Card>
   );
 }

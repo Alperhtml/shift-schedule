@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { FileUp, FolderInput, Users } from 'lucide-react';
 import type { Schedule } from '../../engine/types';
+import type { ScheduleError } from '../../engine/codec';
 import { useStore } from '../../state/store';
 import { useT } from '../../i18n';
 import { useToast } from '../ui/Toast';
@@ -17,6 +18,7 @@ export function ImportMenu({ iconOnly = false }: { iconOnly?: boolean | undefine
   const toast = useToast();
   const fileRef = useRef<HTMLInputElement>(null);
   const [pending, setPending] = useState<Schedule | null>(null);
+  const [failure, setFailure] = useState<ScheduleError | null>(null);
   const [merging, setMerging] = useState(false);
 
   const load = (schedule: Schedule): void => {
@@ -27,8 +29,19 @@ export function ImportMenu({ iconOnly = false }: { iconOnly?: boolean | undefine
 
   const items: MenuItem[] = [
     { label: t('import.json'), icon: FileUp, onSelect: () => fileRef.current?.click() },
-    { label: t('import.merge'), icon: Users, separatorBefore: true, onSelect: () => setMerging(true) },
+    {
+      label: t('import.merge'),
+      icon: Users,
+      hint: t('import.merge.hint'),
+      highlight: true,
+      separatorBefore: true,
+      onSelect: () => setMerging(true),
+    },
   ];
+
+  // A one-person file turns a team board into a solo one, which is a bigger change
+  // than "load a file" suggests, so the confirmation says so out loud.
+  const shrinksToSolo = pending !== null && pending.interns.length === 1 && state.schedule.interns.length > 1;
 
   return (
     <>
@@ -43,9 +56,9 @@ export function ImportMenu({ iconOnly = false }: { iconOnly?: boolean | undefine
           e.target.value = '';
           if (!file) return;
           void (async () => {
-            const schedule = await importJson(file);
-            if (!schedule) {
-              toast(t('toast.badFile'));
+            const parsed = await importJson(file);
+            if (!parsed.ok) {
+              setFailure(parsed.error);
               return;
             }
             // Replacing a board that has content is destructive and clears the
@@ -53,14 +66,14 @@ export function ImportMenu({ iconOnly = false }: { iconOnly?: boolean | undefine
             const hasContent = state.schedule.assignments.length > 0
               || state.schedule.interns.some(i => i.realName.trim() !== '')
               || state.schedule.namePool.some(n => n.trim() !== '');
-            if (hasContent) setPending(schedule);
-            else load(schedule);
+            if (hasContent) setPending(parsed.schedule);
+            else load(parsed.schedule);
           })();
         }}
       />
       <Dialog
         open={pending !== null}
-        title={t('dialog.link.title')}
+        title={t('dialog.import.title')}
         onClose={() => setPending(null)}
         actions={
           <>
@@ -72,12 +85,24 @@ export function ImportMenu({ iconOnly = false }: { iconOnly?: boolean | undefine
                 setPending(null);
               }}
             >
-              {t('dialog.link.confirm')}
+              {t('dialog.import.confirm')}
             </Button>
           </>
         }
       >
-        {t('dialog.link.body')}
+        <p>{t('dialog.import.body')}</p>
+        {shrinksToSolo ? (
+          <p className="mt-2">{t('dialog.import.solo', { n: state.schedule.interns.length })}</p>
+        ) : null}
+      </Dialog>
+
+      <Dialog
+        open={failure !== null}
+        title={t('dialog.badFile.title')}
+        onClose={() => setFailure(null)}
+        actions={<Button onClick={() => setFailure(null)}>{t('dialog.close')}</Button>}
+      >
+        {failure ? t(`file.error.${failure.code}`, failure.params) : ''}
       </Dialog>
 
       <MergeDialog open={merging} onClose={() => setMerging(false)} />

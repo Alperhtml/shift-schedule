@@ -81,17 +81,23 @@ export function makeInterns(n: number, existing: readonly Intern[] = []): Intern
   });
 }
 
+/** Trimmed, inner runs of whitespace collapsed, capped. "Ayşe  Yılmaz" and
+    "Ayşe Yılmaz" are one person, and a merge must not split them in two. */
+export function tidyName(raw: string): string {
+  return raw.trim().replace(/\s+/g, ' ').slice(0, NAME_MAX);
+}
+
 /** Every way out of the app goes through this: stored draft, JSON file, share link.
     Names are trimmed here rather than on each keystroke, which would make a space
     untypable in a controlled input. */
 export function withTrimmedNames(s: Schedule): Schedule {
   const pool = cleanPool(s.namePool);
-  const internsClean = s.interns.every(i => i.realName === i.realName.trim());
+  const internsClean = s.interns.every(i => i.realName === tidyName(i.realName));
   const poolClean = pool.length === s.namePool.length && pool.every((n, k) => n === s.namePool[k]);
   if (internsClean && poolClean) return s;
   return {
     ...s,
-    interns: internsClean ? s.interns : s.interns.map(i => ({ ...i, realName: i.realName.trim() })),
+    interns: internsClean ? s.interns : s.interns.map(i => ({ ...i, realName: tidyName(i.realName) })),
     namePool: pool,
   };
 }
@@ -101,7 +107,7 @@ export function cleanPool(names: readonly string[]): string[] {
   const seen = new Set<string>();
   const out: string[] = [];
   for (const raw of names) {
-    const name = raw.trim().slice(0, NAME_MAX);
+    const name = tidyName(raw);
     if (name === '') continue;
     const key = name.toLocaleLowerCase('tr-TR');
     if (seen.has(key)) continue;

@@ -2,6 +2,7 @@ import { useMemo, useRef, useState } from 'react';
 import { FilePlus2, Trash2, TriangleAlert } from 'lucide-react';
 import { MAX_INTERNS } from '../../engine/types';
 import { mergeSchedules, type MergeFile, type MergeInput, type MergeResult } from '../../engine/merge';
+import type { ScheduleError } from '../../engine/codec';
 import { formatDay } from '../../engine/dates';
 import { useStore } from '../../state/store';
 import { useLang, useT } from '../../i18n';
@@ -22,25 +23,38 @@ export function MergeDialog({ open, onClose }: { open: boolean; onClose: () => v
   const toast = useToast();
   const fileRef = useRef<HTMLInputElement>(null);
   const [inputs, setInputs] = useState<MergeInput[]>([]);
-  const [unreadable, setUnreadable] = useState(0);
+  // A file that will not parse stays in the list with its reason, rather than
+  // being reduced to a number the person cannot act on.
+  const [rejected, setRejected] = useState<{ file: string; error: ScheduleError }[]>([]);
 
   const result: MergeResult = useMemo(() => mergeSchedules(inputs), [inputs]);
 
   const close = (): void => {
     setInputs([]);
-    setUnreadable(0);
+    setRejected([]);
     onClose();
   };
 
   const add = (files: FileList): void => {
     void (async () => {
-      const parsed = await Promise.all([...files].map(async f => ({ file: f.name, schedule: await importJson(f) })));
-      const good = parsed.filter((p): p is MergeInput => p.schedule !== null);
-      const bad = parsed.length - good.length;
-      // A file already in the list is replaced, so picking the same one twice is
-      // not the same as two people sending the same name.
-      setInputs(prev => [...prev.filter(p => !good.some(g => g.file === p.file)), ...good]);
-      setUnreadable(bad);
+      const read = await Promise.all([...files].map(async f => ({ name: f.name, parsed: await importJson(f) })));
+      setRejected(read.flatMap(r => (r.parsed.ok ? [] : [{ file: r.name, error: r.parsed.error }])));
+      setInputs(prev => {
+        const next = [...prev];
+        const bodyOf = (m: MergeInput): string => JSON.stringify(m.schedule);
+        for (const r of read) {
+          if (!r.parsed.ok) continue;
+          const entry: MergeInput = { file: r.name, schedule: r.parsed.schedule };
+          // The same file picked twice is one file. Two different files that happen
+          // to share a name are two, and the second gets a suffix so the list, the
+          // React keys and the "also in ..." message all stay unambiguous.
+          if (next.some(p => bodyOf(p) === bodyOf(entry))) continue;
+          let label = r.name;
+          for (let n = 2; next.some(p => p.file === label); n++) label = `${r.name} (${n})`;
+          next.push({ file: label, schedule: entry.schedule });
+        }
+        return next;
+      });
     })();
   };
 
@@ -58,6 +72,7 @@ export function MergeDialog({ open, onClose }: { open: boolean; onClose: () => v
       case 'unnamed': return t('merge.file.unnamed');
       case 'dateMismatch': return t('merge.file.dateMismatch');
       case 'duplicate': return t('merge.file.duplicate', { file: f.otherFile ?? '' });
+      case 'duplicateInFile': return t('merge.file.duplicateInFile');
       case 'tooMany': return t('merge.file.tooMany', { n: MAX_INTERNS });
       case null: return null;
     }
@@ -67,11 +82,13 @@ export function MergeDialog({ open, onClose }: { open: boolean; onClose: () => v
   if (result.empty.length > 0) problems.push(t('merge.problem.empty', { n: result.empty.length }));
   if (result.over.length > 0) problems.push(t('merge.problem.over', { n: result.over.length }));
   if (result.incomplete.length > 0) problems.push(t('merge.problem.incomplete', { n: result.incomplete.length }));
+  if (result.skipped.length > 0) problems.push(t('merge.problem.skipped', { n: result.skipped.length }));
   if (result.ruleErrors > 0) problems.push(t('merge.problem.rules', { n: result.ruleErrors }));
 
   // Only a duplicate person or an over-full roster is something the user has to
   // decide; the other file problems simply leave that file out.
-  const needsDecision = result.files.some(f => f.problem === 'duplicate' || f.problem === 'tooMany');
+  const needsDecision = result.files.some(f =>
+    f.problem === 'duplicate' || f.problem === 'duplicateInFile' || f.problem === 'tooMany' || f.problem === 'dateMismatch');
   const emptyShown = result.empty.slice(0, LIST_MAX);
   const shiftName = (type: 'DAY' | 'NIGHT'): string => t(type === 'NIGHT' ? 'shift.night' : 'shift.day');
 
@@ -98,12 +115,10 @@ export function MergeDialog({ open, onClose }: { open: boolean; onClose: () => v
             <FilePlus2 aria-hidden size={16} strokeWidth={1.75} />
             {inputs.length === 0 ? t('merge.pick') : t('merge.pickMore')}
           </Button>
-          {unreadable > 0 ? (
-            <span className="text-[13px] text-error">{t('merge.unreadable', { n: unreadable })}</span>
-          ) : null}
+
         </div>
 
-        {inputs.length === 0 ? (
+        {inputs.length === 0 && rejected.length === 0 ? (
           <p className="mt-4 text-text-3">{t('merge.none')}</p>
         ) : (
           <ul className="mt-4 flex flex-col gap-1.5">
@@ -119,9 +134,14 @@ export function MergeDialog({ open, onClose }: { open: boolean; onClose: () => v
                     <p className="truncate text-[13px] font-medium text-text">
                       {f.people.length > 0 ? f.people.join(', ') : f.file}
                     </p>
-                    <p className={`truncate text-[12px] ${bad ? 'text-error' : 'text-text-2'}`}>
+                    <p className={`text-[12px] break-words ${bad ? 'text-error' : 'text-text-2'}`}>
                       {bad ?? (person ? t('merge.counts', { day: person.day, night: person.night }) : f.file)}
                     </p>
+                    {f.skipped.length > 0 ? (
+                      <p className="text-[12px] text-text-2 break-words">
+                        {t('merge.problem.skipped', { n: f.skipped.length })}: {f.skipped.join(', ')}
+                      </p>
+                    ) : null}
                   </div>
                   <IconButton
                     label={t('merge.remove')}
@@ -132,6 +152,23 @@ export function MergeDialog({ open, onClose }: { open: boolean; onClose: () => v
                 </li>
               );
             })}
+            {rejected.map(r => (
+              <li
+                key={`red-${r.file}`}
+                className="flex items-center gap-3 rounded-[var(--radius-control)] border border-hairline bg-surface px-3 py-2"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[13px] font-medium text-text">{r.file}</p>
+                  <p className="break-words text-[12px] text-error">{t(`file.error.${r.error.code}`, r.error.params)}</p>
+                </div>
+                <IconButton
+                  label={t('merge.remove')}
+                  icon={Trash2}
+                  size={16}
+                  onClick={() => setRejected(prev => prev.filter(p => p.file !== r.file))}
+                />
+              </li>
+            ))}
           </ul>
         )}
 

@@ -66,7 +66,7 @@ export function Menu({ label, items, icon: Icon, iconOnly = false }: MenuProps) 
                   transition-colors duration-[var(--dur-fast)] aria-disabled:opacity-40 aria-disabled:hover:bg-transparent
                   ${item.hint === undefined ? 'h-10' : 'py-1.5'}
                   ${item.highlight === true
-                    ? 'bg-accent-tint ring-1 ring-inset ring-[var(--accent-ring)] hover:brightness-[.97]'
+                    ? 'bg-accent-tint ring-1 ring-inset ring-[var(--accent-ring)] hover:bg-accent-tint-strong hover:ring-accent'
                     : 'hover:bg-accent-tint'}
                   ${item.destructive ? 'text-error' : 'text-text'}`}
               >

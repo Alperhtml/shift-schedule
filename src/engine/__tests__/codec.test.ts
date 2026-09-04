@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { createSchedule } from '../schedule';
-import { decodeHash, encodeHash, isSchedule } from '../codec';
+import { decodeHash, encodeHash, isSchedule, parseSchedule } from '../codec';
 import { solve } from '../solver';
 import { createRng } from '../random';
 import type { Schedule } from '../types';
@@ -78,5 +78,55 @@ describe('isSchedule', () => {
     expect(isSchedule({ ...s, assignments: [...s.assignments, { ...s.assignments[0] }] })).toBeNull();
     expect(isSchedule({ ...s, assignments: [{ internId: 'intern-1', dayIndex: 28, type: 'DAY', locked: false }] })).toBeNull();
     expect(isSchedule('nope')).toBeNull();
+  });
+});
+
+describe('parseSchedule reasons', () => {
+  const base = (): Record<string, unknown> => JSON.parse(JSON.stringify({
+    ...createSchedule('2026-09-07', 4),
+    assignments: [{ internId: 'intern-1', dayIndex: 0, type: 'DAY', locked: false }],
+  })) as Record<string, unknown>;
+
+  const reason = (mutate: (x: Record<string, unknown>) => void): string => {
+    const x = base();
+    mutate(x);
+    const r = parseSchedule(x);
+    return r.ok ? 'ok' : r.error.code;
+  };
+
+  it('names what is wrong instead of one message for everything', () => {
+    expect(reason(() => undefined)).toBe('ok');
+    expect(parseSchedule('not an object').ok).toBe(false);
+    expect(reason(x => { x['version'] = 2; })).toBe('version');
+    expect(reason(x => { x['startDate'] = '2026-09-08'; })).toBe('startDate');
+    expect(reason(x => { x['interns'] = []; })).toBe('internCount');
+    expect(reason(x => { x['minPerShift'] = 9; })).toBe('minPerShift');
+    expect(reason(x => { x['assignments'] = 'nope'; })).toBe('assignments');
+    expect(reason(x => { x['assignments'] = [{ internId: 'intern-1', dayIndex: 28, type: 'DAY', locked: false }]; })).toBe('assignmentRow');
+    expect(reason(x => {
+      x['assignments'] = [
+        { internId: 'intern-1', dayIndex: 0, type: 'DAY', locked: false },
+        { internId: 'intern-1', dayIndex: 0, type: 'DAY', locked: false },
+      ];
+    })).toBe('duplicateAssignment');
+    expect(reason(x => { x['namePool'] = [1, 2]; })).toBe('namePool');
+  });
+
+  it('carries the numbers the message needs', () => {
+    const x = base();
+    x['interns'] = Array.from({ length: 9 }, (_, k) => ({ id: `intern-${k + 1}`, index: k + 1, realName: '', pinned: false }));
+    const r = parseSchedule(x);
+    expect(r.ok).toBe(false);
+    if (r.ok) throw new Error('should not parse');
+    expect(r.error).toEqual({ code: 'internCount', params: { n: 9, max: 8 } });
+  });
+
+  it('collapses a doubled inner space in a name it reads back', () => {
+    const x = base();
+    (x['interns'] as Record<string, unknown>[])[0]!['realName'] = '  Ayşe   Yılmaz  ';
+    const r = parseSchedule(x);
+    expect(r.ok).toBe(true);
+    if (!r.ok) throw new Error('should parse');
+    expect(r.schedule.interns[0]?.realName).toBe('Ayşe Yılmaz');
   });
 });

@@ -1,7 +1,7 @@
 import type { Assignment, Intern, Schedule, ShiftType } from './types';
-import { DAYS, MAX_INTERNS, MIN_PER_SHIFT_MAX, MIN_PER_SHIFT_MIN, NAME_MAX } from './types';
+import { DAYS, MAX_INTERNS, MIN_PER_SHIFT_MAX, MIN_PER_SHIFT_MIN } from './types';
 import { isMonday } from './dates';
-import { cleanPool, makeInterns, withTrimmedNames } from './schedule';
+import { cleanPool, makeInterns, tidyName, withTrimmedNames } from './schedule';
 
 const VERSION = 'v1';
 
@@ -80,7 +80,7 @@ export function decodeHash(raw: string): Schedule | null {
   // A name arriving in a link is treated as typed, so opening someone else's board
   // and pressing the draw button cannot reshuffle the names they sent.
   const interns: Intern[] = makeInterns(n).map((i, k) => {
-    const realName = (names[k] ?? '').trim().slice(0, NAME_MAX);
+    const realName = tidyName(names[k] ?? '');
     return { ...i, realName, pinned: realName !== '' };
   });
   const rows: { a: Assignment; k: number }[] = [];
@@ -102,51 +102,96 @@ export function decodeHash(raw: string): Schedule | null {
 
 const isRecord = (x: unknown): x is Record<string, unknown> => typeof x === 'object' && x !== null;
 
-/** Validates every SPEC §2 invariant and returns a normalised copy, or null. */
-export function isSchedule(x: unknown): Schedule | null {
-  if (!isRecord(x) || x['version'] !== 1) return null;
+/** Why a file was refused. The user is told which one, not just that it failed. */
+export type ScheduleErrorCode =
+  | 'shape'
+  | 'version'
+  | 'startDate'
+  | 'internCount'
+  | 'intern'
+  | 'minPerShift'
+  | 'assignments'
+  | 'assignmentRow'
+  | 'duplicateAssignment'
+  | 'namePool';
+
+export interface ScheduleError {
+  code: ScheduleErrorCode;
+  params?: Record<string, string | number>;
+}
+
+export type ScheduleParse =
+  | { ok: true; schedule: Schedule }
+  | { ok: false; error: ScheduleError };
+
+const bad = (code: ScheduleErrorCode, params?: Record<string, string | number>): ScheduleParse =>
+  params === undefined ? { ok: false, error: { code } } : { ok: false, error: { code, params } };
+
+/** Validates every SPEC §2 invariant and returns a normalised copy, or the reason
+    it could not. SPEC §7.1. */
+export function parseSchedule(x: unknown): ScheduleParse {
+  if (!isRecord(x)) return bad('shape');
+  if (x['version'] !== 1) {
+    const found = x['version'];
+    return bad('version', { found: typeof found === 'number' || typeof found === 'string' ? found : '?' });
+  }
   const { startDate, interns, minPerShift, assignments, namePool } = x;
-  if (typeof startDate !== 'string' || !isMonday(startDate)) return null;
-  // One is allowed: a solo file holds the single person who filled it.
-  if (!Array.isArray(interns) || interns.length < 1 || interns.length > MAX_INTERNS) return null;
+  if (typeof startDate !== 'string' || !isMonday(startDate)) return bad('startDate');
+  // One is allowed: a solo file holds the single person who filled it, and a merge
+  // of two people produces a board of two.
+  if (!Array.isArray(interns)) return bad('assignments');
+  if (interns.length < 1 || interns.length > MAX_INTERNS) return bad('internCount', { n: interns.length, max: MAX_INTERNS });
 
   const cleanInterns = makeInterns(interns.length);
   for (let k = 0; k < interns.length; k++) {
     const raw: unknown = interns[k];
     const expected = cleanInterns[k];
-    if (!isRecord(raw) || expected === undefined || raw['id'] !== expected.id || raw['index'] !== expected.index) return null;
+    if (!isRecord(raw) || expected === undefined || raw['id'] !== expected.id || raw['index'] !== expected.index) return bad('intern');
     const name = raw['realName'];
-    if (typeof name !== 'string') return null;
-    expected.realName = name.trim().slice(0, NAME_MAX);
+    if (typeof name !== 'string') return bad('intern');
+    expected.realName = tidyName(name);
     // Files written before names could be pinned treat every name as typed.
     expected.pinned = typeof raw['pinned'] === 'boolean' ? raw['pinned'] : expected.realName !== '';
   }
 
-  if (typeof minPerShift !== 'number' || !Number.isInteger(minPerShift) || minPerShift < MIN_PER_SHIFT_MIN || minPerShift > MIN_PER_SHIFT_MAX) return null;
-  if (!Array.isArray(assignments)) return null;
+  if (typeof minPerShift !== 'number' || !Number.isInteger(minPerShift) || minPerShift < MIN_PER_SHIFT_MIN || minPerShift > MIN_PER_SHIFT_MAX) {
+    return bad('minPerShift', { min: MIN_PER_SHIFT_MIN, max: MIN_PER_SHIFT_MAX });
+  }
+  if (!Array.isArray(assignments)) return bad('assignments');
 
   const ids = new Set(cleanInterns.map(i => i.id));
   const seen = new Set<string>();
   const cleanAssignments: Assignment[] = [];
   for (const raw of assignments as unknown[]) {
-    if (!isRecord(raw)) return null;
+    if (!isRecord(raw)) return bad('assignmentRow');
     const { internId, dayIndex, type, locked } = raw;
-    if (typeof internId !== 'string' || !ids.has(internId)) return null;
-    if (typeof dayIndex !== 'number' || !Number.isInteger(dayIndex) || dayIndex < 0 || dayIndex >= DAYS) return null;
-    if (type !== 'DAY' && type !== 'NIGHT') return null;
-    if (typeof locked !== 'boolean') return null;
+    if (typeof internId !== 'string' || !ids.has(internId)) return bad('assignmentRow');
+    if (typeof dayIndex !== 'number' || !Number.isInteger(dayIndex) || dayIndex < 0 || dayIndex >= DAYS) {
+      return bad('assignmentRow');
+    }
+    if (type !== 'DAY' && type !== 'NIGHT') return bad('assignmentRow');
+    if (typeof locked !== 'boolean') return bad('assignmentRow');
     const key = `${internId}|${dayIndex}|${type}`;
-    if (seen.has(key)) return null;
+    if (seen.has(key)) return bad('duplicateAssignment');
     seen.add(key);
     cleanAssignments.push({ internId, dayIndex, type, locked });
   }
-  if (namePool !== undefined && (!Array.isArray(namePool) || !namePool.every(n => typeof n === 'string'))) return null;
+  if (namePool !== undefined && (!Array.isArray(namePool) || !namePool.every(n => typeof n === 'string'))) return bad('namePool');
   return {
-    version: 1,
-    startDate,
-    interns: cleanInterns,
-    minPerShift,
-    assignments: cleanAssignments,
-    namePool: cleanPool((namePool as string[] | undefined) ?? []),
+    ok: true,
+    schedule: {
+      version: 1,
+      startDate,
+      interns: cleanInterns,
+      minPerShift,
+      assignments: cleanAssignments,
+      namePool: cleanPool((namePool as string[] | undefined) ?? []),
+    },
   };
+}
+
+/** The same check when the reason does not matter. */
+export function isSchedule(x: unknown): Schedule | null {
+  const parsed = parseSchedule(x);
+  return parsed.ok ? parsed.schedule : null;
 }

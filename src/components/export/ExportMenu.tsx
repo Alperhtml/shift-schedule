@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { FileDown, FileSpreadsheet, Image, Link2, Printer, Share2 } from 'lucide-react';
 import { useStore } from '../../state/store';
+import { modeOf } from '../../state/reducer';
+import { validate } from '../../engine/rules';
+import { tidyName } from '../../engine/schedule';
 import { useLang, useT } from '../../i18n';
 import { useToast } from '../ui/Toast';
 import { Menu, type MenuItem } from '../ui/Menu';
@@ -13,11 +16,24 @@ import { printSchedule } from './printSchedule';
 import { copyLink, linkFor } from './shareLink';
 
 export function ExportMenu({ iconOnly = false }: { iconOnly?: boolean | undefined }) {
-  const { state } = useStore();
+  const { state, dispatch } = useStore();
   const { lang } = useLang();
   const t = useT();
   const toast = useToast();
   const [manualLink, setManualLink] = useState<string | null>(null);
+  // JSON is the file other people act on, so it is the one worth stopping at.
+  // PNG, Excel and print are for looking at and stay silent.
+  const [gate, setGate] = useState<'none' | 'name' | 'rules'>('none');
+
+  const ruleErrors = validate(state.schedule).filter(v => v.severity === 'error').length;
+  const soloUnnamed = modeOf(state.schedule) === 'solo'
+    && state.schedule.interns.every(i => tidyName(i.realName) === '');
+
+  const askJson = (): void => {
+    if (soloUnnamed) setGate('name');
+    else if (ruleErrors > 0) setGate('rules');
+    else run(() => exportJson(state.schedule));
+  };
 
   const run = (fn: () => Promise<string> | string): void => {
     void (async () => {
@@ -40,7 +56,7 @@ export function ExportMenu({ iconOnly = false }: { iconOnly?: boolean | undefine
       icon: FileDown,
       hint: t('export.json.hint'),
       highlight: true,
-      onSelect: () => run(() => exportJson(state.schedule)),
+      onSelect: askJson,
     },
     {
       label: t('export.link'),
@@ -59,6 +75,50 @@ export function ExportMenu({ iconOnly = false }: { iconOnly?: boolean | undefine
   return (
     <>
       <Menu label={t('toolbar.export')} items={items} icon={Share2} iconOnly={iconOnly} />
+      <Dialog
+        open={gate === 'name'}
+        title={t('dialog.soloName.title')}
+        onClose={() => setGate('none')}
+        actions={
+          <>
+            <Button onClick={() => setGate('none')}>{t('dialog.cancel')}</Button>
+            <Button
+              variant="primary"
+              onClick={() => {
+                setGate('none');
+                dispatch({ type: 'SET_SETTINGS_OPEN', open: true });
+              }}
+            >
+              {t('dialog.soloName.confirm')}
+            </Button>
+          </>
+        }
+      >
+        {t('dialog.soloName.body')}
+      </Dialog>
+
+      <Dialog
+        open={gate === 'rules'}
+        title={t('dialog.exportRules.title')}
+        onClose={() => setGate('none')}
+        actions={
+          <>
+            <Button onClick={() => setGate('none')}>{t('dialog.cancel')}</Button>
+            <Button
+              variant="primary"
+              onClick={() => {
+                setGate('none');
+                run(() => exportJson(state.schedule));
+              }}
+            >
+              {t('dialog.exportRules.confirm')}
+            </Button>
+          </>
+        }
+      >
+        {t('dialog.exportRules.body', { n: ruleErrors })}
+      </Dialog>
+
       <Dialog
         open={manualLink !== null}
         title={t('dialog.copy.title')}

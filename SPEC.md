@@ -511,6 +511,19 @@ first, exactly as a share link does. The merge writes nothing until the user
 presses `Panoya aktar`, and applying dispatches `LOAD_SCHEDULE`, which clears the
 history.
 
+## 14.4 Splash
+
+The loading screen draws the Koç emblem wedge by wedge. It is 30 `<path>`
+elements inside `<g class="koc-spiral">`, embedded in `index.html` rather than
+fetched, with `--i` on each path driving `animation-delay: calc(var(--i) * 38ms)`.
+One cycle is 2400 ms and the shape completes at 1102 ms. The old version masked a
+PNG with an animated conic gradient; that needed a registered custom property,
+carried a fallback for browsers without one, and shipped an 11.6 kB image. All of
+that is gone, along with `koc-logo@2x.png`.
+
+`#splash.has-error` stops the wedges and holds the whole emblem at 35 percent, so
+a failed load shows a still mark above the message rather than a blinking one.
+
 ## 15. Resets
 
 Three resets, three scopes, each placed next to the thing it clears. All three
@@ -547,3 +560,79 @@ interns is not a loss and is not worth a dialog.
 The JSON item in the export menu is tinted and carries the line
 `Birleştirmek için bu gerekir`, because merging (§14.2) reads JSON files and
 nothing else.
+
+## 16. Hardening from the stress test of 4 September 2026
+
+An external pass over the live site looked for data loss and dead ends. What it
+found, and what the code now does.
+
+### 16.1 The chain that lost a month
+
+A team file naming the same person on two interns fell into one bucket keyed by
+that name: the first person's shifts were dropped, the second's were written
+twice, and the board that came out could not be read back by `parseSchedule`.
+Applied and saved, it failed validation on the next visit, the draft was
+discarded, and the empty state was written over it. Three separate faults in a
+row, each harmless alone.
+
+- `merge.ts` no longer keys shifts by name. Each person carries their own, so two
+  people called the same thing cannot share a bucket.
+- A name on two interns of one file is `duplicateInFile`, and it blocks.
+- The merged board is run through `parseSchedule` before it is offered. A board
+  the app cannot read back is never written.
+- An unreadable draft is moved to `emed-nobet.v1.bozuk` instead of being dropped,
+  and the next start offers it back as a download before anything replaces it.
+
+### 16.2 Files
+
+Every solo export was called `nobet-<date>.json`, and the merge list identified
+files by name, so a second person's file silently replaced the first. The name
+now carries the one named person (`nobet-2026-09-07-ayse-yilmaz.json`), the list
+identifies a file by its content, and two different files that still share a name
+get a `(2)` suffix so the list, the React keys and the "also in" message stay
+unambiguous. Picking the same file twice adds it once.
+
+`parseSchedule` returns a `ScheduleError` rather than null, and every refusal
+names its cause: a Tuesday start, nine interns, a duplicated row, a version the
+app does not read. The merge list keeps refused files in place with their reason
+instead of counting them.
+
+### 16.3 Blocking versus reporting
+
+A file from another period used to be reported and then quietly left out, and
+which file counted as wrong depended on the order they were picked. It now
+blocks, like a duplicate name and an over-full roster. Only `noPeople` and
+`unnamed` are still excluded without blocking: one stray file must not stop the
+other six.
+
+Named people with no shifts anywhere never reached the board and were never
+mentioned; they are now listed on their file's row and counted in the summary.
+
+### 16.4 Smaller things
+
+| Was | Is |
+|---|---|
+| Solo export with an empty name, refused later by the merge | asks for the name first |
+| JSON export of a board breaking rest rules, silent | says how many and asks; PNG, Excel and print stay silent |
+| One-person file replacing a team board without a word | the confirmation says the board becomes solo and points at the merge |
+| Import confirmation talking about links | its own words |
+| A refused or broken link staying in the address bar | hash cleared once the decision is made |
+| `Ayşe  Yılmaz` and `Ayşe Yılmaz` as two people | `tidyName` collapses inner runs everywhere names are compared. Diacritics are **not** folded: `Ayse` and `Ayşe` stay two people, because merging them wrongly is worse than listing them apart |
+| A pasted list of names becoming one 40-character name | paste splits on lines, commas and semicolons |
+| An untouched board opening on `Kadro (56)` | staffing is not reported until the board has been started |
+| Toast covering the phone's bottom navigation | sits above it |
+| The merge reason truncated on a phone | wraps |
+
+### 16.5 Not changed, and why
+
+- **File validation stays 1 to 8 interns.** The report asked for 4 to 8 on team
+  files. The merge of two people produces a board of two; requiring four would
+  mean the app could not re-open a board it had just written.
+- **Colours change when a merge reorders people by name.** The order is what makes
+  the result the same whatever order the files were picked in.
+- **No cross-tab sync.** Two tabs on one board still end in last-writer-wins.
+  Listening to `storage` opens a class of races worth more than it saves here.
+- **Chip names still truncate.** The full name is in the audit panel and the
+  tooltip; widening the chip costs a column on a 28-day board.
+- **Rules still never block an edit.** SPEC §4 is deliberate. The only new stop is
+  at the JSON export, where the file leaves for someone else.

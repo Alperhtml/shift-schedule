@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { createSchedule } from '../schedule';
 import { mergeSchedules, type MergeInput } from '../merge';
+import { isSchedule } from '../codec';
 import type { Schedule, ShiftType } from '../types';
 import { QUOTA } from '../types';
 
@@ -95,7 +96,7 @@ describe('mergeSchedules', () => {
     expect(r.people).toHaveLength(1);
   });
 
-  it('excludes a file from another period without blocking the rest', () => {
+  it('blocks on a file from another period rather than leaving that person out', () => {
     const r = mergeSchedules([
       file('a', solo('Ali', [[0, 'DAY']])),
       file('b', solo('Berk', [[0, 'DAY']], '2026-10-05')),
@@ -103,7 +104,58 @@ describe('mergeSchedules', () => {
     expect(r.files[1]?.problem).toBe('dateMismatch');
     expect(r.startDate).toBe('2026-09-07');
     expect(r.people.map(p => p.name)).toEqual(['Ali']);
+    // Berk would silently be missing from the meeting's board otherwise.
+    expect(r.blocked).toBe(true);
+  });
+
+  it('blocks when one file names the same person twice, and loses nobody', () => {
+    // The bug this replaces: both people fell into one bucket keyed by name, the
+    // first person's shifts vanished and the second's were written twice.
+    const s = createSchedule('2026-09-07', 4);
+    const [a, b] = s.interns;
+    if (!a || !b) throw new Error('no interns');
+    a.realName = 'Ayşe Yılmaz';
+    b.realName = 'Ayşe Yılmaz';
+    s.assignments = [
+      { internId: a.id, dayIndex: 0, type: 'DAY', locked: false },
+      { internId: b.id, dayIndex: 5, type: 'NIGHT', locked: false },
+    ];
+    const r = mergeSchedules([file('takim', s)]);
+    expect(r.files[0]?.problem).toBe('duplicateInFile');
+    expect(r.blocked).toBe(true);
+    expect(r.schedule).toBeNull();
+  });
+
+  it('treats a doubled inner space as the same person', () => {
+    const r = mergeSchedules([
+      file('a', solo('Ayşe Yılmaz', [[0, 'DAY']])),
+      file('b', solo('Ayşe  Yılmaz', [[1, 'DAY']])),
+    ]);
+    expect(r.files[1]?.problem).toBe('duplicate');
+    expect(r.blocked).toBe(true);
+  });
+
+  it('names the people a file brought nothing for', () => {
+    const s = createSchedule('2026-09-07', 4);
+    const [a, b] = s.interns;
+    if (!a || !b) throw new Error('no interns');
+    a.realName = 'Ali';
+    b.realName = 'Berk';
+    s.assignments = [{ internId: a.id, dayIndex: 0, type: 'DAY', locked: false }];
+    const r = mergeSchedules([file('takim', s)]);
+    expect(r.people.map(p => p.name)).toEqual(['Ali']);
+    expect(r.skipped).toEqual(['Berk']);
+    expect(r.files[0]?.skipped).toEqual(['Berk']);
     expect(r.blocked).toBe(false);
+  });
+
+  it('every board it produces can be read back as a file', () => {
+    const r = mergeSchedules([
+      file('a', solo('Ali', fullPattern(0))),
+      file('b', solo('Berk', fullPattern(1))),
+    ]);
+    expect(r.invalid).toBe(false);
+    expect(isSchedule(JSON.parse(JSON.stringify(r.schedule)))).not.toBeNull();
   });
 
   it('excludes an unfinished file and a file with no name', () => {

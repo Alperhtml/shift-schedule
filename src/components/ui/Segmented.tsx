@@ -17,7 +17,7 @@ export function Segmented<T extends string>({ value, options, onChange, ariaLabe
     <div
       role="radiogroup"
       aria-label={ariaLabel}
-      className={`inline-flex items-center gap-0.5 rounded-[var(--radius-control)] bg-surface-2 p-0.5 ${className}`}
+      className={`inline-flex w-fit items-center gap-0.5 rounded-[var(--radius-control)] bg-surface-2 p-0.5 ${className}`}
     >
       {options.map((o, index) => {
         const selected = o.value === value;
