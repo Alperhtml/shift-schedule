@@ -24,7 +24,7 @@ export function Toolbar({ onRandomize, onReset, busy, compact = false }: Toolbar
         <>
           <Button onClick={onReset} disabled={state.schedule.assignments.length === 0}>
             <RotateCcw aria-hidden size={15} strokeWidth={1.75} />
-            {t('toolbar.reset')}
+            {t('toolbar.resetBoard')}
           </Button>
           <ImportMenu />
           <ExportMenu />

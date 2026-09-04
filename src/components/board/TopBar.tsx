@@ -34,7 +34,7 @@ export function TopBar({ actions }: { actions: BoardActions }) {
   const overflow: MenuItem[] = [
     { label: t('toolbar.undo'), icon: Undo2, onSelect: () => dispatch({ type: 'UNDO' }), disabled: state.past.length === 0 },
     { label: t('toolbar.redo'), icon: Redo2, onSelect: () => dispatch({ type: 'REDO' }), disabled: state.future.length === 0 },
-    { label: t('toolbar.reset'), icon: RotateCcw, separatorBefore: true, onSelect: actions.reset, disabled: state.schedule.assignments.length === 0 },
+    { label: t('toolbar.resetBoard'), icon: RotateCcw, separatorBefore: true, onSelect: actions.reset, disabled: state.schedule.assignments.length === 0 },
     { label: t('lang.other'), icon: Languages, separatorBefore: true, onSelect: () => dispatch({ type: 'SET_LANG', lang: lang === 'tr' ? 'en' : 'tr' }) },
     { label: t('toolbar.settings'), icon: Settings, separatorBefore: true, onSelect: () => dispatch({ type: 'SET_SETTINGS_OPEN', open: true }) },
   ];

@@ -1,19 +1,27 @@
 import { useState } from 'react';
 import { useDroppable } from '@dnd-kit/core';
-import { ListPlus } from 'lucide-react';
+import { Eraser, ListPlus } from 'lucide-react';
 import { useStore } from '../../state/store';
 import { useT } from '../../i18n';
 import { modeOf } from '../../state/reducer';
 import { PALETTE_ID, useDragState } from '../board/DndProvider';
 import { PaletteRow } from './PaletteRow';
 import { NamePoolSheet } from './NamePoolSheet';
+import { Dialog } from '../ui/Dialog';
+import { Button } from '../ui/Button';
+import { Switch } from '../ui/Switch';
+import { useToast } from '../ui/Toast';
 
 export function Palette({ showTitle = true }: { showTitle?: boolean | undefined }) {
-  const { state } = useStore();
+  const { state, dispatch } = useStore();
   const t = useT();
   const { setNodeRef } = useDroppable({ id: PALETTE_ID });
   const drag = useDragState();
   const [poolOpen, setPoolOpen] = useState(false);
+  const [askReset, setAskReset] = useState(false);
+  const [clearPool, setClearPool] = useState(false);
+  const toast = useToast();
+  const hasNames = state.schedule.interns.some(i => i.realName.trim() !== '') || state.schedule.namePool.length > 0;
   const armed = drag.over === PALETTE_ID && drag.activeInternId !== null;
   const solo = modeOf(state.schedule) === 'solo';
 
@@ -40,6 +48,18 @@ export function Palette({ showTitle = true }: { showTitle?: boolean | undefined 
           {t('pool.title')}
         </button>
         )}
+        <button
+          type="button"
+          aria-label={t('palette.resetNames')}
+          disabled={!hasNames}
+          onClick={() => setAskReset(true)}
+          className="inline-flex h-7 shrink-0 items-center gap-1 rounded-[var(--radius-control)] px-2 text-[11px] font-medium text-text-2
+            transition-colors duration-[var(--dur-fast)] hover:bg-accent-tint hover:text-text
+            disabled:opacity-40 disabled:pointer-events-none"
+        >
+          <Eraser aria-hidden size={13} strokeWidth={1.75} />
+          {t('palette.resetNames')}
+        </button>
       </div>
       <div className="flex flex-col">
         {state.schedule.interns.map(i => <PaletteRow key={i.id} intern={i} />)}
@@ -47,6 +67,32 @@ export function Palette({ showTitle = true }: { showTitle?: boolean | undefined 
       <p className="mt-2 hidden px-2 text-[11px] leading-[1.5] text-text-3 md:block">{t('a11y.dragHint')}</p>
       <p className="mt-2 px-2 text-[11px] leading-[1.5] text-text-3 md:hidden">{t('a11y.tapHint')}</p>
       <NamePoolSheet open={poolOpen} onClose={() => setPoolOpen(false)} />
+
+      <Dialog
+        open={askReset}
+        title={t('dialog.resetNames.title')}
+        onClose={() => setAskReset(false)}
+        actions={
+          <>
+            <Button onClick={() => setAskReset(false)}>{t('dialog.cancel')}</Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                dispatch({ type: 'RESET_NAMES', clearPool });
+                setAskReset(false);
+                toast(t('toast.namesReset'));
+              }}
+            >
+              {t('dialog.resetNames.confirm')}
+            </Button>
+          </>
+        }
+      >
+        <p>{t('dialog.resetNames.body')}</p>
+        <div className="mt-3">
+          <Switch checked={clearPool} onChange={setClearPool} label={t('dialog.resetNames.clearPool')} />
+        </div>
+      </Dialog>
     </section>
   );
 }

@@ -35,7 +35,13 @@ export function ExportMenu({ iconOnly = false }: { iconOnly?: boolean | undefine
     { label: t('export.png.matrix'), icon: Image, onSelect: () => run(() => exportPng(state.schedule, 'matrix', lang)) },
     { label: t('export.xlsx'), icon: FileSpreadsheet, onSelect: () => run(() => exportXlsx(state.schedule, lang)) },
     { label: t('export.print'), icon: Printer, onSelect: () => void printSchedule(state.schedule, lang) },
-    { label: t('export.json'), icon: FileDown, onSelect: () => run(() => exportJson(state.schedule)) },
+    {
+      label: t('export.json'),
+      icon: FileDown,
+      hint: t('export.json.hint'),
+      highlight: true,
+      onSelect: () => run(() => exportJson(state.schedule)),
+    },
     {
       label: t('export.link'),
       icon: Link2,

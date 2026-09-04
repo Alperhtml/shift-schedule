@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useStore } from '../../state/store';
 import { useLang, useT } from '../../i18n';
 import type { Lang } from '../../engine/types';
-import { modeOf, type ScheduleMode, type UiState } from '../../state/reducer';
+import { modeOf, type UiState } from '../../state/reducer';
 import { Button } from '../ui/Button';
 import { Segmented } from '../ui/Segmented';
 import { AppMark } from '../ui/AppMark';
@@ -11,6 +11,7 @@ import { PeriodCard } from './PeriodCard';
 import { InternsCard } from './InternsCard';
 import { StaffingCard } from './StaffingCard';
 import { NamePoolCard } from './NamePoolCard';
+import { ModeSwitch } from './ModeSwitch';
 
 export function SetupScreen() {
   const { state, dispatch } = useStore();
@@ -49,18 +50,7 @@ export function SetupScreen() {
       </header>
 
       <div className="mb-1 flex flex-col gap-2">
-        <Segmented<ScheduleMode>
-          value={mode}
-          options={[
-            { value: 'team', label: t('setup.mode.team') },
-            { value: 'solo', label: t('setup.mode.solo') },
-          ]}
-          onChange={m => dispatch({ type: 'SET_MODE', mode: m })}
-          ariaLabel={t('setup.mode.aria')}
-        />
-        <p className="text-[13px] leading-[1.45] text-text-2">
-          {t(mode === 'solo' ? 'setup.mode.hint.solo' : 'setup.mode.hint.team')}
-        </p>
+        <ModeSwitch showHint />
       </div>
 
       <PeriodCard />

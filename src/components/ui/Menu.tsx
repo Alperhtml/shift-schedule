@@ -9,6 +9,10 @@ export interface MenuItem {
   destructive?: boolean | undefined;
   separatorBefore?: boolean | undefined;
   disabled?: boolean | undefined;
+  /** A second line under the label, for an item that needs a reason. */
+  hint?: string | undefined;
+  /** Tinted and ringed, for the one item most people are looking for. */
+  highlight?: boolean | undefined;
 }
 
 export interface MenuProps {
@@ -58,12 +62,30 @@ export function Menu({ label, items, icon: Icon, iconOnly = false }: MenuProps) 
                   setOpen(false);
                   item.onSelect();
                 }}
-                className={`flex h-10 items-center gap-2.5 rounded-[var(--radius-control)] px-2.5 text-left text-[13px]
-                  transition-colors duration-[var(--dur-fast)] hover:bg-accent-tint aria-disabled:opacity-40 aria-disabled:hover:bg-transparent
+                className={`flex items-center gap-2.5 rounded-[var(--radius-control)] px-2.5 text-left text-[13px]
+                  transition-colors duration-[var(--dur-fast)] aria-disabled:opacity-40 aria-disabled:hover:bg-transparent
+                  ${item.hint === undefined ? 'h-10' : 'py-1.5'}
+                  ${item.highlight === true
+                    ? 'bg-accent-tint ring-1 ring-inset ring-[var(--accent-ring)] hover:brightness-[.97]'
+                    : 'hover:bg-accent-tint'}
                   ${item.destructive ? 'text-error' : 'text-text'}`}
               >
-                {item.icon ? <item.icon aria-hidden size={16} strokeWidth={1.75} className={item.destructive ? '' : 'text-text-2'} /> : null}
-                {item.label}
+                {item.icon ? (
+                  <item.icon
+                    aria-hidden
+                    size={16}
+                    strokeWidth={1.75}
+                    className={item.destructive ? '' : item.highlight === true ? 'text-accent-text' : 'text-text-2'}
+                  />
+                ) : null}
+                <span className="flex min-w-0 flex-col">
+                  <span className={item.highlight === true ? 'font-medium text-accent-text' : ''}>{item.label}</span>
+                  {item.hint === undefined ? null : (
+                    <span className={`text-[11px] leading-[1.4] ${item.highlight === true ? 'text-accent-text' : 'text-text-2'}`}>
+                      {item.hint}
+                    </span>
+                  )}
+                </span>
               </button>
             </div>
           ))}

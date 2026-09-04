@@ -28,6 +28,43 @@ describe('reducer', () => {
     s = reducer(s, { type: 'MOVE', internId: 'intern-1', from: { dayIndex: 5, shift: 'DAY' }, to: { dayIndex: 2, shift: 'NIGHT' } });
     expect(s).toBe(before);
   });
+  it('RESET_NAMES clears names and unpins them, leaving the shifts alone', () => {
+    let s = reducer(base(), { type: 'SET_INTERN_NAME', id: 'intern-1', name: 'Ayşe Yılmaz' });
+    s = reducer(s, { type: 'SET_NAME_POOL', names: ['Burak Öztürk'] });
+    s = assign(s, 'intern-1', 0, 'DAY');
+    s = reducer(s, { type: 'RESET_NAMES', clearPool: false });
+    expect(s.schedule.interns.every(i => i.realName === '' && !i.pinned)).toBe(true);
+    expect(s.schedule.assignments).toHaveLength(1);
+    expect(s.schedule.namePool).toEqual(['Burak Öztürk']);
+
+    s = reducer(s, { type: 'RESET_NAMES', clearPool: true });
+    expect(s.schedule.namePool).toEqual([]);
+  });
+  it('RESET_NAMES reaches the history, so undo cannot revive a cleared name', () => {
+    let s = reducer(base(), { type: 'SET_INTERN_NAME', id: 'intern-1', name: 'Ayşe Yılmaz' });
+    s = assign(s, 'intern-1', 0, 'DAY');
+    s = assign(s, 'intern-1', 3, 'NIGHT');
+    s = reducer(s, { type: 'RESET_NAMES', clearPool: false });
+    s = reducer(s, { type: 'UNDO' });
+    expect(s.schedule.interns[0]?.realName).toBe('');
+    expect(s.schedule.assignments).toHaveLength(1);
+  });
+  it('RESET_ALL goes back to a first visit but keeps language and appearance', () => {
+    let s = reducer(base(), { type: 'SET_INTERN_NAME', id: 'intern-1', name: 'Ayşe Yılmaz' });
+    s = assign(s, 'intern-1', 0, 'DAY');
+    s = reducer(s, { type: 'SET_LANG', lang: 'en' });
+    s = reducer(s, { type: 'SET_THEME', theme: 'dark' });
+    s = reducer(s, { type: 'SET_STEP', step: 'board' });
+    s = reducer(s, { type: 'RESET_ALL', isoDate: '2026-10-05' });
+    expect(s.schedule.startDate).toBe('2026-10-05');
+    expect(s.schedule.interns).toHaveLength(TEAM_DEFAULT);
+    expect(s.schedule.interns.every(i => i.realName === '')).toBe(true);
+    expect(s.schedule.assignments).toEqual([]);
+    expect(s.schedule.namePool).toEqual([]);
+    expect(s.past).toEqual([]);
+    expect(s.future).toEqual([]);
+    expect(s.ui).toEqual({ step: 'setup', view: 'calendar', lang: 'en', theme: 'dark', settingsOpen: false });
+  });
   it('SET_INTERN_COUNT still holds the team floor of 4 and ceiling of 8', () => {
     expect(reducer(base(), { type: 'SET_INTERN_COUNT', n: 1 }).schedule.interns).toHaveLength(4);
     expect(reducer(base(), { type: 'SET_INTERN_COUNT', n: 99 }).schedule.interns).toHaveLength(8);

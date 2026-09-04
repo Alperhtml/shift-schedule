@@ -14,6 +14,7 @@ Acil tıp intörn stajı için 28 günlük nöbet listesi hazırlayan, tarayıc�
 - Sekiz intörn rengi göz kararı değil, ölçüyle seçildi: en yakın iki renk arasındaki algısal fark en büyük olacak şekilde arandı.
 - Dışa aktarma: PNG (3x), Excel, yazdırma veya PDF, JSON dosyası ve bağlantı.
 - İçe aktarma ayrı bir düğmede: tek dosya, ya da herkesin dosyasını bir arada.
+- Üç ayrı sıfırlama: tabloyu sıfırla (nöbetler gider, isimler kalır), listeyi sıfırla (isimler gider, nöbetler kalır), en baştan başla (her şey gider, ilk ekrana döner).
 
 ## Herkes kendi programını yapsın, sonra birleştirsin
 

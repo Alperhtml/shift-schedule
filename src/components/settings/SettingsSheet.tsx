@@ -1,3 +1,5 @@
+import { useState } from 'react';
+import { RotateCcw } from 'lucide-react';
 import { useStore } from '../../state/store';
 import { modeOf } from '../../state/reducer';
 import { useLang, useT } from '../../i18n';
@@ -10,6 +12,11 @@ import { PeriodCard } from '../setup/PeriodCard';
 import { InternsCard } from '../setup/InternsCard';
 import { StaffingCard } from '../setup/StaffingCard';
 import { NamePoolCard } from '../setup/NamePoolCard';
+import { ModeSwitch } from '../setup/ModeSwitch';
+import { Button } from '../ui/Button';
+import { Dialog } from '../ui/Dialog';
+import { useToast } from '../ui/Toast';
+import { nextMonday } from '../../engine/dates';
 
 export function SettingsSheet() {
   const { state, dispatch } = useStore();
@@ -17,6 +24,20 @@ export function SettingsSheet() {
   const { lang } = useLang();
   const t = useT();
   const mobile = useMediaQuery('(max-width: 767px)');
+  const toast = useToast();
+  const [askRestart, setAskRestart] = useState(false);
+
+  const restart = (): void => {
+    // A shared link would otherwise reload the same schedule on the next refresh.
+    try {
+      history.replaceState(null, '', `${location.pathname}${location.search}`);
+    } catch {
+      /* null origin or a sandboxed frame: the state still resets, the address bar just keeps the hash */
+    }
+    dispatch({ type: 'RESET_ALL', isoDate: nextMonday(new Date()) });
+    setAskRestart(false);
+    toast(t('toast.restarted'));
+  };
 
   return (
     <Sheet
@@ -36,6 +57,10 @@ export function SettingsSheet() {
           />
         </div>
         <div className="flex flex-wrap items-center justify-between gap-3">
+          <span className="text-[13px] text-text-2">{t('settings.mode')}</span>
+          <ModeSwitch />
+        </div>
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <span className="text-[13px] text-text-2">{t('settings.theme')}</span>
           <Segmented<UiState['theme']>
             value={state.ui.theme}
@@ -52,7 +77,29 @@ export function SettingsSheet() {
         <InternsCard />
         {solo ? null : <StaffingCard />}
         {solo ? null : <NamePoolCard />}
+
+        <div className="mt-1 flex flex-col items-start gap-1 border-t border-hairline pt-4">
+          <Button variant="destructive" onClick={() => setAskRestart(true)}>
+            <RotateCcw aria-hidden size={15} strokeWidth={1.75} />
+            {t('settings.restart')}
+          </Button>
+          <p className="px-1 text-[12px] leading-[1.45] text-text-2">{t('settings.restart.hint')}</p>
+        </div>
       </div>
+
+      <Dialog
+        open={askRestart}
+        title={t('dialog.restart.title')}
+        onClose={() => setAskRestart(false)}
+        actions={
+          <>
+            <Button onClick={() => setAskRestart(false)}>{t('dialog.cancel')}</Button>
+            <Button variant="destructive" onClick={restart}>{t('dialog.restart.confirm')}</Button>
+          </>
+        }
+      >
+        {t('dialog.restart.body')}
+      </Dialog>
     </Sheet>
   );
 }

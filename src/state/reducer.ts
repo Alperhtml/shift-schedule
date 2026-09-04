@@ -39,6 +39,8 @@ export type Action =
   | { type: 'SET_NAME_POOL'; names: string[] }
   | { type: 'DISTRIBUTE_POOL'; seed: number }
   | { type: 'RESET'; keepLocked: boolean }
+  | { type: 'RESET_NAMES'; clearPool: boolean }
+  | { type: 'RESET_ALL'; isoDate: string }
   | { type: 'LOAD_SCHEDULE'; schedule: Schedule }
   | { type: 'UNDO' }
   | { type: 'REDO' }
@@ -207,6 +209,25 @@ export function reducer(state: AppState, action: Action): AppState {
       if (next.length === s.assignments.length) return state;
       return withHistory(state, { ...s, assignments: next });
     }
+
+    case 'RESET_NAMES':
+      // Names live outside the history, like every other name edit, so this is
+      // undone by typing rather than by Ctrl+Z. The confirmation says so.
+      return outsideHistory(state, x => ({
+        ...x,
+        interns: x.interns.map(i => ({ ...i, realName: '', pinned: false })),
+        namePool: action.clearPool ? [] : x.namePool,
+      }));
+
+    // Everything back to a first visit, except the two things that are the
+    // person's own preference rather than their data.
+    case 'RESET_ALL':
+      return {
+        schedule: createSchedule(action.isoDate, TEAM_DEFAULT),
+        past: [],
+        future: [],
+        ui: { step: 'setup', view: 'calendar', lang: state.ui.lang, theme: state.ui.theme, settingsOpen: false },
+      };
 
     case 'LOAD_SCHEDULE':
       return { ...state, schedule: action.schedule, past: [], future: [] };

@@ -181,6 +181,8 @@ Same top bar. A table: first column intern (dot + name, sticky), 28 columns head
 - Export menu: quiet button opens a menu with six items and a hairline separating downloads from "Bağlantıyı kopyala".
 - Toasts: bottom centre, glass pill, 13 px, 3 s auto-dismiss, `aria-live="polite"`, never steal focus.
 - Mode switch: a segmented control at the top of the setup screen, `Takım programı` / `Kendi programım`, with one line of explanation under it. Solo hides the staffing and name-pool cards and the intern stepper; the interns card becomes a single field titled `Siz`.
+- Resets sit next to what they clear: `Tabloyu sıfırla` in the board toolbar, `Listeyi sıfırla` in the intern panel header beside `İsim havuzu`, `En baştan başla` at the foot of settings under a hairline, in the destructive variant with a one-line explanation. The list reset is disabled while there is nothing to clear.
+- Export menu: the JSON item is tinted `--accent-tint` with a 1 px inset `--accent-ring` and an 11 px second line, because it is the one export the merge needs. It is the only highlighted item in any menu; a second one would cancel the first.
 - Merge review: a 560 px dialog. One row per file with the person it contributes, their day and night counts, and a remove button; a rule; then the roster line, the period, and the problem list. Problem lines carry a small `--warn-stroke` dot so they scan as problems rather than prose. Empty shifts are listed as dates, at most eight then `ve n tane daha`. The primary action is disabled while a file needs a decision.
 
 ### 2.6 Identity, loading and failure

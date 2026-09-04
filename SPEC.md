@@ -510,3 +510,35 @@ Import is its own control beside export, holding `JSON dosyası` and
 first, exactly as a share link does. The merge writes nothing until the user
 presses `Panoya aktar`, and applying dispatches `LOAD_SCHEDULE`, which clears the
 history.
+
+## 15. Resets
+
+Three resets, three scopes, each placed next to the thing it clears. All three
+confirm first, and each dialog states exactly what goes and what stays.
+
+| Action | Where | Clears | Keeps | Undoable |
+|---|---|---|---|---|
+| `Tabloyu sıfırla` | board toolbar, and the phone overflow menu | every assignment, or every unlocked one when the switch is on | names, name pool, period, staffing target | yes, it is a history action |
+| `Listeyi sıfırla` | the intern panel header, beside `İsim havuzu` | intern names, and the name pool when the switch is on | assignments, period, staffing target | no |
+| `En baştan başla` | settings, at the bottom | schedule, names, pool, period, history, and the URL hash | language and appearance, which are preferences rather than data | no |
+
+`RESET_NAMES` also unpins every name, so a later pool draw can fill the interns
+again. Like every other name edit it is applied through `outsideHistory`, which
+means undo cannot revive a cleared name; the dialog says so.
+
+`RESET_ALL` takes the new start date as an argument rather than reading the
+clock, so the reducer stays pure. The caller clears `location.hash` first, inside
+a try/catch: without that, a schedule that arrived by link would come back on the
+next reload and the reset would look like it had failed.
+
+`Listeyi sıfırla` is disabled while every name is empty and the pool is empty,
+so it never offers to clear nothing.
+
+The mode switch (§14.1) lives on the setup screen and in settings, as one shared
+component. Going solo asks first, but only when it would actually lose something:
+a shift belonging to somebody else, or another person's name. Dropping five empty
+interns is not a loss and is not worth a dialog.
+
+The JSON item in the export menu is tinted and carries the line
+`Birleştirmek için bu gerekir`, because merging (§14.2) reads JSON files and
+nothing else.
