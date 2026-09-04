@@ -48,6 +48,17 @@ export function Palette({ showTitle = true }: { showTitle?: boolean | undefined 
           {t('pool.title')}
         </button>
         )}
+      </div>
+      <div className="flex flex-col">
+        {state.schedule.interns.map(i => <PaletteRow key={i.id} intern={i} />)}
+      </div>
+      {/* Four corners: the title and the pool above, the hint and the reset below.
+          Putting all three controls in the header made the row wider than the card. */}
+      <div className="mt-2 flex items-center justify-between gap-2 pl-2 pr-1">
+        <p className="min-w-0 truncate text-[11px] leading-[1.5] text-text-3">
+          <span className="hidden md:inline">{t('palette.drag')}</span>
+          <span className="md:hidden">{t('a11y.tapHint')}</span>
+        </p>
         <button
           type="button"
           aria-label={t('palette.resetNames')}
@@ -61,11 +72,6 @@ export function Palette({ showTitle = true }: { showTitle?: boolean | undefined 
           {t('palette.resetNames')}
         </button>
       </div>
-      <div className="flex flex-col">
-        {state.schedule.interns.map(i => <PaletteRow key={i.id} intern={i} />)}
-      </div>
-      <p className="mt-2 hidden px-2 text-[11px] leading-[1.5] text-text-3 md:block">{t('a11y.dragHint')}</p>
-      <p className="mt-2 px-2 text-[11px] leading-[1.5] text-text-3 md:hidden">{t('a11y.tapHint')}</p>
       <NamePoolSheet open={poolOpen} onClose={() => setPoolOpen(false)} />
 
       <Dialog

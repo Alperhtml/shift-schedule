@@ -153,6 +153,7 @@ export const tr = {
 
   // Üç ayrı sıfırlama, üç ayrı kapsam. SPEC bölüm 15.
   'toolbar.resetBoard': 'Tabloyu sıfırla',
+  'palette.drag': 'Sürükleyin',
   'palette.resetNames': 'Listeyi sıfırla',
   'settings.mode': 'Program türü',
   'settings.restart': 'En baştan başla',

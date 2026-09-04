@@ -155,6 +155,7 @@ export const en: Record<Key, string> = {
 
   // Three resets, three scopes. SPEC section 15.
   'toolbar.resetBoard': 'Clear the board',
+  'palette.drag': 'Drag',
   'palette.resetNames': 'Clear the list',
   'settings.mode': 'Schedule type',
   'settings.restart': 'Start over',

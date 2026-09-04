@@ -519,7 +519,7 @@ confirm first, and each dialog states exactly what goes and what stays.
 | Action | Where | Clears | Keeps | Undoable |
 |---|---|---|---|---|
 | `Tabloyu sıfırla` | board toolbar, and the phone overflow menu | every assignment, or every unlocked one when the switch is on | names, name pool, period, staffing target | yes, it is a history action |
-| `Listeyi sıfırla` | the intern panel header, beside `İsim havuzu` | intern names, and the name pool when the switch is on | assignments, period, staffing target | no |
+| `Listeyi sıfırla` | bottom right of the intern panel | intern names, and the name pool when the switch is on | assignments, period, staffing target | no |
 | `En baştan başla` | settings, at the bottom | schedule, names, pool, period, history, and the URL hash | language and appearance, which are preferences rather than data | no |
 
 `RESET_NAMES` also unpins every name, so a later pool draw can fill the interns
@@ -533,6 +533,11 @@ next reload and the reset would look like it had failed.
 
 `Listeyi sıfırla` is disabled while every name is empty and the pool is empty,
 so it never offers to clear nothing.
+
+The intern panel puts one thing in each corner: the title, `İsim havuzu`, the
+drag hint, `Listeyi sıfırla`. The visible hint is the single word `palette.drag`;
+`a11y.dragHint`, which also names the Enter key, stays as dnd-kit's screen-reader
+instruction, where a keyboard user still needs it.
 
 The mode switch (§14.1) lives on the setup screen and in settings, as one shared
 component. Going solo asks first, but only when it would actually lose something:
