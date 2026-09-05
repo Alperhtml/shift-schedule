@@ -64,7 +64,7 @@ export const tr = {
   'dialog.reset.keepLocked': 'Kilitli atamaları koru',
   'dialog.reset.confirm': 'Sıfırla',
   'dialog.randomize.title': 'Rastgele doldur',
-  'dialog.randomize.body': 'Kilitli olmayan {n} atama değişecek.',
+  'dialog.randomize.body': 'Tablodaki kilitli olmayan {n} nöbet yeniden dağıtılacak.',
   'dialog.randomize.confirm': 'Doldur',
   'dialog.link.title': 'Bağlantıdan yükle',
   'dialog.link.body': 'Mevcut taslağın yerine bağlantıdaki program açılsın mı?',
@@ -113,8 +113,8 @@ export const tr = {
   'error.title': 'Bir şeyler ters gitti',
   'error.body': 'Sayfayı yenileyin. Programınız tarayıcıda kayıtlı, kaybolmadı.',
   'error.retry': 'Yenile',
-  'dialog.randomize.keepPlaced': 'Elle yerleştirilenler kalsın',
-  'dialog.randomize.bodyKeep': 'Panodaki nöbetler yerinde kalacak, boş kalanlar kurallara göre doldurulacak.',
+  'dialog.randomize.keepPlaced': 'Tabloda olanlar kalsın',
+  'dialog.randomize.bodyKeep': 'Tablodaki nöbetler yerinde kalacak, yalnızca boş kalanlar doldurulacak.',
   'dialog.randomize.pool': 'İsim havuzundan {n} intörne isim verilecek.',
   'pool.title': 'İsim havuzu',
   'pool.hint': 'Bir isim yazıp Enter\'a basın veya Ekle\'ye dokunun. Adı girilmemiş intörnlere buradan rastgele isim verilir; kartta adı yazılmış olanlar değişmez.',
@@ -150,6 +150,15 @@ export const tr = {
   'a11y.chip': '{intern}, {date} {shift} nöbeti',
   'a11y.violation': 'Kural ihlali',
   'a11y.jump': 'Nöbete git',
+
+  // Rastgele doldur artık iki ayrı işi ayrı ayrı sunuyor. SPEC 17.
+  'dialog.randomize.both': 'Nöbetleri ve isimleri dağıt',
+  'dialog.randomize.both.info': 'Önce nöbetleri dağıtır, sonra havuzdaki isimleri adı yazılmamış intörnlere verir. Daha önce havuzdan verilmiş isimler yeniden karışır; elle yazdığınız isimler değişmez.',
+  'dialog.randomize.shifts': 'Sadece nöbetleri dağıt',
+  'dialog.randomize.shifts.info': 'Yalnızca nöbetleri dağıtır. İsimlere hiç dokunmaz.',
+  'dialog.randomize.names': 'Sadece isimleri dağıt',
+  'dialog.randomize.names.info': 'Panodaki nöbetlere dokunmaz. Havuzdaki isimleri adı yazılmamış intörnlere dağıtır; daha önce havuzdan verilmiş isimler yeniden karışır.',
+  'dialog.randomize.keepPlaced.info': 'Açıkken tabloda şu an duran nöbetler yerinde kalır, yalnızca boş kalanlar kurallara göre doldurulur. Kapalıyken kilitli olmayan bütün nöbetler yeniden dağıtılır. Tabloda bir şey varsa açık gelir.',
 
   // Stres testi 4 Eylül 2026: dosya reddedilme nedenleri ve kurtarma. SPEC 16.
   'merge.file.duplicateInFile': 'Bu dosyada aynı isim iki intörnde geçiyor',

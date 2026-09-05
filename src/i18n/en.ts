@@ -66,7 +66,7 @@ export const en: Record<Key, string> = {
   'dialog.reset.keepLocked': 'Keep locked assignments',
   'dialog.reset.confirm': 'Reset',
   'dialog.randomize.title': 'Randomize',
-  'dialog.randomize.body': '{n} unlocked assignments will change.',
+  'dialog.randomize.body': '{n} unlocked shifts on the board will be dealt again.',
   'dialog.randomize.confirm': 'Fill',
   'dialog.link.title': 'Load from link',
   'dialog.link.body': 'Replace the current draft with the schedule in this link?',
@@ -115,8 +115,8 @@ export const en: Record<Key, string> = {
   'error.title': 'Something went wrong',
   'error.body': 'Refresh the page. Your schedule is saved in the browser and is not lost.',
   'error.retry': 'Refresh',
-  'dialog.randomize.keepPlaced': 'Keep what I placed',
-  'dialog.randomize.bodyKeep': 'The shifts on the board stay where they are; the rest is filled by the rules.',
+  'dialog.randomize.keepPlaced': 'Keep what is on the board',
+  'dialog.randomize.bodyKeep': 'The shifts on the board stay, and only the empty ones are filled.',
   'dialog.randomize.pool': '{n} interns will be named from the pool.',
   'pool.title': 'Name pool',
   'pool.hint': 'Type a name and press Enter, or tap Add. Interns with no name get one from here at random; a name typed on an intern is never changed.',
@@ -152,6 +152,15 @@ export const en: Record<Key, string> = {
   'a11y.chip': '{intern}, {date} {shift} shift',
   'a11y.violation': 'Rule violation',
   'a11y.jump': 'Go to the shift',
+
+  // Filling shifts and drawing names are two jobs, offered separately. SPEC 17.
+  'dialog.randomize.both': 'Fill shifts and draw names',
+  'dialog.randomize.both.info': 'Fills the shifts, then hands pool names to the interns you have not named. Names drawn earlier are reshuffled; the ones you typed never move.',
+  'dialog.randomize.shifts': 'Fill shifts only',
+  'dialog.randomize.shifts.info': 'Fills the shifts and leaves every name alone.',
+  'dialog.randomize.names': 'Draw names only',
+  'dialog.randomize.names.info': 'Leaves the board untouched and hands pool names to the interns you have not named. Names drawn earlier are reshuffled.',
+  'dialog.randomize.keepPlaced.info': 'On, the shifts on the board now stay and only the empty ones are filled to the rules. Off, every unlocked shift is dealt again. It starts on whenever the board holds anything.',
 
   // Stress test 4 September 2026: why a file was refused, and recovery. SPEC 16.
   'merge.file.duplicateInFile': 'One name is on two interns in this file',

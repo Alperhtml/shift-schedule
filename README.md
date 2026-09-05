@@ -15,6 +15,7 @@ Acil tıp intörn stajı için 28 günlük nöbet listesi hazırlayan, tarayıc�
 - Dışa aktarma: PNG (3x), Excel, yazdırma veya PDF, JSON dosyası ve bağlantı.
 - İçe aktarma ayrı bir düğmede: tek dosya, ya da herkesin dosyasını bir arada.
 - Dosyalar kişi adıyla iner (`nobet-2026-09-07-ayse-yilmaz.json`), böylece herkesin dosyası ayrı durur.
+- Rastgele doldur üç ayrı iş sunar: nöbetleri ve isimleri dağıt, sadece nöbetleri dağıt, sadece isimleri dağıt. Hiçbiri önceden seçili değildir ve her birinin yanında ne yaptığını anlatan bir i vardır.
 - Üç ayrı sıfırlama: tabloyu sıfırla (nöbetler gider, isimler kalır), listeyi sıfırla (isimler gider, nöbetler kalır), en baştan başla (her şey gider, ilk ekrana döner).
 
 ## Herkes kendi programını yapsın, sonra birleştirsin

@@ -8,7 +8,32 @@ import { runSolver } from '../../state/solverClient';
 import { Button } from '../ui/Button';
 import { Dialog } from '../ui/Dialog';
 import { Switch } from '../ui/Switch';
+import { InfoDot } from '../ui/InfoDot';
 import { useToast } from '../ui/Toast';
+
+/** One row, one job, done on click. Nothing is preselected, so nobody presses
+    Enter and gets an action they did not pick. */
+function ActionRow({ label, info, note, onSelect }: {
+  label: string;
+  info: string;
+  note?: string | undefined;
+  onSelect: () => void;
+}) {
+  return (
+    <div className="flex items-center gap-1">
+      <button
+        type="button"
+        onClick={onSelect}
+        className="flex min-w-0 flex-1 flex-col items-start rounded-[var(--radius-control)] px-2.5 py-2 text-left
+          transition-colors duration-[var(--dur-fast)] hover:bg-accent-tint"
+      >
+        <span className="text-[15px] font-medium text-text">{label}</span>
+        {note === undefined ? null : <span className="text-[12px] text-text-2">{note}</span>}
+      </button>
+      <InfoDot label={label} text={info} />
+    </div>
+  );
+}
 
 export interface BoardActions {
   busy: boolean;
@@ -27,9 +52,11 @@ export function useBoardActions(onFilled: (assignments: Assignment[]) => void): 
   const [askRandomize, setAskRandomize] = useState(false);
   const [askReset, setAskReset] = useState(false);
   const [keepLocked, setKeepLocked] = useState(false);
-  const [keepPlaced, setKeepPlaced] = useState(false);
+  // Set from the board every time the dialog opens, not remembered: whoever does
+  // not read the switch must not lose what they put there.
+  const [keepPlaced, setKeepPlaced] = useState(true);
 
-  const fill = (keep: boolean): void => {
+  const fill = (keep: boolean, withNames: boolean): void => {
     setBusy(true);
     const started = Date.now();
     void (async () => {
@@ -48,10 +75,13 @@ export function useBoardActions(onFilled: (assignments: Assignment[]) => void): 
         const wait = Math.max(0, 240 - (Date.now() - started));
         await new Promise<void>(r => window.setTimeout(r, wait));
         dispatch({ type: 'RANDOMIZE', assignments });
-        // Second step: any intern the user has not named draws one from the pool.
-        const fit = poolFit(state.schedule.interns, state.schedule.namePool);
-        if (Math.min(fit.available, fit.open) > 0) {
-          dispatch({ type: 'DISTRIBUTE_POOL', seed: Date.now() });
+        // Names are a separate job now. Doing both used to be the only choice, and
+        // anyone who wanted fresh shifts had their drawn names reshuffled with them.
+        if (withNames) {
+          const fit = poolFit(state.schedule.interns, state.schedule.namePool);
+          if (Math.min(fit.available, fit.open) > 0) {
+            dispatch({ type: 'DISTRIBUTE_POOL', seed: Date.now() });
+          }
         }
         onFilled(assignments);
         toast(result.shortSlots > 0 ? t('toast.randomized.short', { n: result.shortSlots }) : t('toast.randomized'));
@@ -66,6 +96,17 @@ export function useBoardActions(onFilled: (assignments: Assignment[]) => void): 
   const unlocked = unlockedCount(state.schedule);
   const pool = poolFit(state.schedule.interns, state.schedule.namePool);
   const willName = Math.min(pool.available, pool.open);
+  const hasShifts = state.schedule.assignments.length > 0;
+  // Ask whenever something could change without being asked for: shifts on the
+  // board, or names waiting in the pool.
+  const needsAsk = hasShifts || willName > 0;
+
+  const namesOnly = (): void => {
+    dispatch({ type: 'DISTRIBUTE_POOL', seed: Date.now() });
+    setAskRandomize(false);
+    toast(t('toast.poolDistributed'));
+  };
+
 
   const dialogs = (
     <>
@@ -73,28 +114,49 @@ export function useBoardActions(onFilled: (assignments: Assignment[]) => void): 
         open={askRandomize}
         title={t('dialog.randomize.title')}
         onClose={() => setAskRandomize(false)}
-        actions={
-          <>
-            <Button onClick={() => setAskRandomize(false)}>{t('dialog.cancel')}</Button>
-            <Button
-              variant="primary"
-              onClick={() => {
-                setAskRandomize(false);
-                fill(keepPlaced);
-              }}
-            >
-              {t('dialog.randomize.confirm')}
-            </Button>
-          </>
-        }
+        actions={<Button onClick={() => setAskRandomize(false)}>{t('dialog.cancel')}</Button>}
       >
-        <p>{keepPlaced ? t('dialog.randomize.bodyKeep') : t('dialog.randomize.body', { n: unlocked })}</p>
-        <div className="mt-3">
-          <Switch checked={keepPlaced} onChange={setKeepPlaced} label={t('dialog.randomize.keepPlaced')} />
-        </div>
-        {willName > 0 ? (
-          <p className="mt-3 text-[13px] text-text-2">{t('dialog.randomize.pool', { n: willName })}</p>
+        {hasShifts ? (
+          <div className="mb-2 rounded-[var(--radius-control)] bg-surface-2 px-2.5 py-2">
+            <div className="flex items-center justify-between gap-1">
+              <Switch checked={keepPlaced} onChange={setKeepPlaced} label={t('dialog.randomize.keepPlaced')} />
+              <InfoDot label={t('dialog.randomize.keepPlaced')} text={t('dialog.randomize.keepPlaced.info')} />
+            </div>
+            <p className="mt-1 text-[12px] leading-[1.45] text-text-2">
+              {keepPlaced ? t('dialog.randomize.bodyKeep') : t('dialog.randomize.body', { n: unlocked })}
+            </p>
+          </div>
         ) : null}
+
+        <div className="flex flex-col">
+          {willName > 0 ? (
+            <ActionRow
+              label={t('dialog.randomize.both')}
+              info={t('dialog.randomize.both.info')}
+              note={t('dialog.randomize.pool', { n: willName })}
+              onSelect={() => {
+                setAskRandomize(false);
+                fill(keepPlaced, true);
+              }}
+            />
+          ) : null}
+          <ActionRow
+            label={t('dialog.randomize.shifts')}
+            info={t('dialog.randomize.shifts.info')}
+            onSelect={() => {
+              setAskRandomize(false);
+              fill(keepPlaced, false);
+            }}
+          />
+          {willName > 0 ? (
+            <ActionRow
+              label={t('dialog.randomize.names')}
+              info={t('dialog.randomize.names.info')}
+              note={t('dialog.randomize.pool', { n: willName })}
+              onSelect={namesOnly}
+            />
+          ) : null}
+        </div>
       </Dialog>
 
       <Dialog
@@ -126,7 +188,14 @@ export function useBoardActions(onFilled: (assignments: Assignment[]) => void): 
 
   return {
     busy,
-    randomize: () => (state.schedule.assignments.length > 0 ? setAskRandomize(true) : fill(false)),
+    randomize: () => {
+      if (!needsAsk) {
+        fill(false, true);
+        return;
+      }
+      setKeepPlaced(hasShifts);
+      setAskRandomize(true);
+    },
     reset: () => {
       if (state.schedule.assignments.length > 0) setAskReset(true);
     },

@@ -636,3 +636,53 @@ mentioned; they are now listed on their file's row and counted in the summary.
   tooltip; widening the chip costs a column on a 28-day board.
 - **Rules still never block an edit.** SPEC §4 is deliberate. The only new stop is
   at the JSON export, where the file leaves for someone else.
+
+## 17. Filling shifts and drawing names
+
+`Rastgele doldur` used to do two jobs on one press: deal the shifts, then hand
+pool names to every intern the user had not named. The second job was invisible.
+On an empty board there was no dialog at all, and because a draw reshuffles names
+it gave out earlier, anyone pressing the button to refresh the shifts had their
+whole name list rearranged with them.
+
+The two jobs are now offered separately.
+
+### 17.1 When it asks
+
+The dialog opens when something could change without being asked for: the board
+holds shifts, or the pool holds names that have somewhere to go
+(`min(poolFit.available, poolFit.open) > 0`). An empty board with an empty pool
+fills straight away, because there is nothing to lose.
+
+### 17.2 What it offers
+
+Nothing is preselected and there is no confirm button. Each row is its own
+action, done on click, so no default can run a job nobody chose and Enter cannot
+either. Rows appear only when they mean something.
+
+| Row | Shown when | Does |
+|---|---|---|
+| Nöbetleri ve isimleri dağıt | names have somewhere to go | the old behaviour, now by choice |
+| Sadece nöbetleri dağıt | always | deals shifts, touches no name |
+| Sadece isimleri dağıt | names have somewhere to go | draws names, touches no shift |
+
+Above them, only when the board holds shifts, the `Tabloda olanlar kalsın`
+switch, with a line under it that counts what the current setting would change.
+It applies to the two rows that deal shifts.
+
+The switch is **on** whenever the board holds anything, set from the board each
+time the dialog opens rather than remembered from last time. Someone who does not
+read it keeps their own work; losing it silently and asking "why did what I put
+there change" is the failure worth designing against. Turning it off applies to
+that one run only. The old label named manual placement, which was too narrow:
+what the solver dealt a minute ago is just as much theirs to keep.
+
+Every row and the switch carry an `InfoDot`: an `i` that opens on hover, on tap
+and from the keyboard, in one sentence. Tap matters because a phone has no hover
+and a long press is not something anybody thinks to try. The info on both
+name-drawing rows says plainly that names drawn earlier get reshuffled and that
+typed names never move.
+
+`InfoDot` is built on `useTooltip(text, { tapToggle: true })`, which opens on
+click, closes on a click elsewhere or Escape, and skips the long-press path. It
+is not a `Popover`: that traps focus, which is wrong for a hint.

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type FocusEvent as ReactFocusEvent, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type MouseEvent as ReactMouseEvent, type FocusEvent as ReactFocusEvent, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 
 export interface TooltipHandlers {
@@ -6,7 +6,7 @@ export interface TooltipHandlers {
   onPointerLeave: (e: ReactPointerEvent) => void;
   onPointerDown: (e: ReactPointerEvent) => void;
   onPointerUp: () => void;
-  onClick: () => void;
+  onClick: (e?: ReactMouseEvent) => void;
   onFocus: (e: ReactFocusEvent) => void;
   onBlur: (e: ReactFocusEvent) => void;
 }
@@ -30,11 +30,19 @@ if (typeof window !== 'undefined') {
   window.addEventListener('touchstart', () => { keyboardModality = false; }, true);
 }
 
+export interface TooltipOptions {
+  /** A tap opens and closes it. For an explanation the reader goes looking for,
+      where a long press is not something anybody would think to try. */
+  tapToggle?: boolean | undefined;
+}
+
 /** Hover after 300 ms, focus at once, long press after 450 ms on touch.
     A hook rather than a wrapper, so it composes with drag listeners and keeps
     the consumer's own ref. */
-export function useTooltip(content: ReactNode): TooltipBinding {
+export function useTooltip(content: ReactNode, options: TooltipOptions = {}): TooltipBinding {
+  const tapToggle = options.tapToggle === true;
   const timer = useRef<number | undefined>(undefined);
+  const holder = useRef<HTMLElement | null>(null);
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
   const enabled = content !== null && content !== '' && content !== undefined && content !== false;
 
@@ -50,6 +58,7 @@ export function useTooltip(content: ReactNode): TooltipBinding {
         for (const other of openTooltips) other();
         openTooltips.clear();
         openTooltips.add(hide);
+        holder.current = el;
         const rect = el.getBoundingClientRect();
         setPos({ top: rect.bottom + 8, left: rect.left + rect.width / 2 });
       }, delay);
@@ -65,17 +74,39 @@ export function useTooltip(content: ReactNode): TooltipBinding {
     [hide],
   );
 
+  useEffect(() => {
+    if (!tapToggle || !pos) return undefined;
+    const away = (e: Event): void => {
+      if (!(e.target instanceof Node) || !holder.current?.contains(e.target)) hide();
+    };
+    const key = (e: KeyboardEvent): void => { if (e.key === 'Escape') hide(); };
+    window.addEventListener('pointerdown', away, true);
+    window.addEventListener('keydown', key);
+    return () => {
+      window.removeEventListener('pointerdown', away, true);
+      window.removeEventListener('keydown', key);
+    };
+  }, [tapToggle, pos, hide]);
+
   const handlers: TooltipHandlers = {
     onPointerEnter: e => {
       if (enabled && e.pointerType !== 'touch') show(300, e.currentTarget as HTMLElement);
     },
-    onPointerLeave: () => hide(),
+    onPointerLeave: () => { if (!tapToggle) hide(); },
     onPointerDown: e => {
+      if (tapToggle) return;
       if (enabled && e.pointerType === 'touch') show(450, e.currentTarget as HTMLElement);
       else hide();
     },
-    onPointerUp: () => hide(),
-    onClick: () => hide(),
+    onPointerUp: () => { if (!tapToggle) hide(); },
+    onClick: e => {
+      if (!tapToggle) {
+        hide();
+        return;
+      }
+      if (pos) hide();
+      else if (enabled && e) show(0, e.currentTarget as HTMLElement);
+    },
     onFocus: e => {
       if (enabled && keyboardModality) show(0, e.currentTarget as HTMLElement);
     },
